@@ -1,0 +1,21 @@
+# Local Netlify folder
+.netlify
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+.vite
+
+# Environment / secrets
+.env
+.env.*
+
+# Firebase local emulator / logs
+.fb-emu-cache
+firebase-debug.log
+firestore-debug.log
+
+# OS
+.DS_Store

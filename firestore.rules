@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // TEMPORARY: emulator-only, permissive rules for local UX testing.
+    // This file is NOT deployed anywhere in this session; it only governs
+    // the local Firestore emulator process. Do not deploy this to production.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // TEMPORARY: emulator-only, permissive rules for local UX testing.
+    // This file is NOT deployed anywhere in this session; it only governs
+    // the local Storage emulator process. Do not deploy this to production
+    // as-is — real deployment should restrict writes to authenticated users
+    // (e.g. request.auth != null) before connecting a live Storage bucket.
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}

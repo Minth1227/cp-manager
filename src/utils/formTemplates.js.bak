@@ -1,0 +1,1060 @@
+// ============================================
+// 별지 서식 HTML 템플릿
+// 각 별지를 HTML 테이블로 충실히 재현
+// ============================================
+
+const commonStyle = `
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ── 화면 표시용 ── */
+  @media screen {
+    body { padding: 20mm; max-width: 210mm; margin: 0 auto; }
+  }
+
+  /* ── 공통 타이포그래피 ── */
+  /* [수정 #13] 기업 내부망/오프라인 환경 대비 fallback 폰트 스택 강화 */
+  body {
+    font-family: 'Pretendard Variable', 'Apple SD Gothic Neo', '맑은 고딕', 'Malgun Gothic', 'NanumGothic', Dotum, sans-serif;
+    font-size: 10pt; color: #111; line-height: 1.5;
+  }
+  .byeolji-title { text-align: center; font-size: 16pt; font-weight: 700; margin: 10px 0 20px; }
+  .byeolji-subtitle { text-align: left; font-size: 8pt; color: #666; margin-bottom: 5px; }
+  .byeolji-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  .byeolji-table th, .byeolji-table td { border: 1px solid #333; padding: 5px 8px; font-size: 9pt; vertical-align: middle; }
+  .byeolji-table th { background: #f5f5f5; font-weight: 600; text-align: center; }
+  .byeolji-table td.value { min-height: 22px; }
+  .byeolji-table .label-cell { background: #f9f9f9; font-weight: 500; width: 120px; }
+  .byeolji-table .label-cell-wide { background: #f9f9f9; font-weight: 500; width: 180px; }
+  .eng { font-size: 7.5pt; color: #555; display: block; }
+  .checkbox { font-size: 12pt; }
+  .signature-area { margin-top: 30px; text-align: center; line-height: 2; }
+  .note-area { margin-top: 15px; font-size: 8pt; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
+  .print-btn { position: fixed; top: 10px; right: 10px; padding: 8px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; z-index: 9999; }
+  .print-btn:hover { background: #1d4ed8; }
+
+  /* ── 인쇄 전용 ── */
+  /* [수정 #8] page-break-inside 누락 추가 — A4 출력 시 테이블 행/서명영역 잘림 방지 */
+  /* [수정 #9] body padding + @page margin 이중 여백 해소 → @page margin이 전담 */
+  @media print {
+    body { padding: 0; margin: 0; }
+    @page { size: A4 portrait; margin: 15mm 20mm; }   /* 관공서 표준 여백 */
+
+    .print-btn { display: none; }
+
+    /* 테이블 행 페이지 경계 분할 방지 */
+    .byeolji-table { page-break-inside: auto; }
+    .byeolji-table tr { page-break-inside: avoid; page-break-after: auto; }
+    /* 멀티페이지 테이블에서 헤더 반복 표시 */
+    .byeolji-table thead { display: table-header-group; }
+    .byeolji-table tfoot { display: table-footer-group; }
+
+    /* 서명 영역 및 주의사항 분할 방지 */
+    .signature-area { page-break-inside: avoid; }
+    .note-area { page-break-inside: avoid; }
+  }
+</style>
+`;
+
+const printButton = '<button class="print-btn" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>';
+
+function ck(val, target) {
+  return val === target ? '☑' : '☐';
+}
+function v(data, key, fallback) {
+  return data[key] || fallback || '';
+}
+
+// ─── 별지 제4호: 전문판정(신청)서 ───
+function tmpl_04(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제4호 - 전문판정(신청)서</title>${commonStyle}</head><body>${printButton}
+<div style="display: flex; justify-content: space-between; align-items: flex-end;">
+  <div class="byeolji-subtitle" style="margin-bottom: 0;">[별지 제4호 서식] Annexed paper No. 4</div>
+  <table style="border-collapse: collapse; text-align: center; font-size: 8pt; line-height: 1.2;">
+    <tr>
+      <td style="border: 1px solid #333; padding: 4px 8px; background: #f9f9f9;">처리기간<br><span class="eng">Handling Time</span></td>
+      <td style="border: 1px solid #333; padding: 4px 15px;">15일<br><span class="eng">15 days</span></td>
+    </tr>
+  </table>
+</div>
+<div class="byeolji-title">전략물자 전문판정(신청)서<br><span style="font-size:11pt">Classification (Application) Form</span></div>
+<table class="byeolji-table">
+  <tr>
+    <th rowspan="4" style="width:100px">① 신청인<br><span class="eng">Applicant</span></th>
+    <td class="label-cell">상 호<span class="eng">Name of Company</span></td>
+    <td class="value">${v(data,'companyName')}</td>
+    <td class="label-cell">신청인<span class="eng">Applicant</span></td>
+    <td class="value">${v(data,'applicantName')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">주 소<span class="eng">Address</span></td>
+    <td class="value">${v(data,'address')}</td>
+    <td class="label-cell">사업자등록번호<span class="eng">Business Registration No.</span></td>
+    <td class="value">${v(data,'regNumber')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">전 화<span class="eng">Telephone</span></td>
+    <td class="value">${v(data,'telephone')}</td>
+    <td class="label-cell">무역업고유번호<span class="eng">Trade Business Code</span></td>
+    <td class="value">${v(data,'tradeCode')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">판정결과 공개<span class="eng">Consent to share</span></td>
+    <td colspan="3">${ck(data.disclosure,'public')} 공개 (With all) &nbsp; ${ck(data.disclosure,'partial')} 일부공개 (With Specified Person) &nbsp; ${ck(data.disclosure,'private')} 비공개 (With None)</td>
+  </tr>
+  <tr>
+    <th>② HS번호<br><span class="eng">HS Code</span></th>
+    <td colspan="4" class="value">${v(data,'hsCode')}</td>
+  </tr>
+  <tr>
+    <th>③ 물품명(기술명 및 기술내용)<br><span class="eng">Item</span></th>
+    <td colspan="4" class="value">${v(data,'itemName')}</td>
+  </tr>
+  <tr>
+    <th rowspan="2">④ 형식 및 규격<br><span class="eng">Type and Specifications</span></th>
+    <td class="label-cell">모델번호 및 모델명<span class="eng">Model No. & Name</span></td>
+    <td colspan="3" class="value">${v(data,'modelNumber')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">규격/용도<span class="eng">Specifications/Usage</span></td>
+    <td colspan="3" class="value" style="min-height:60px;white-space:pre-wrap">${v(data,'specUsage')}</td>
+  </tr>
+  <tr>
+    <th rowspan="7">⑤ 판정 결과<br><span class="eng">Classification results</span></th>
+    <td colspan="4" style="text-align:center; background:#f9f9f9; font-weight:500;">
+      전략물자등 해당여부 (해당시 통제번호 기재)<br>
+      <span class="eng">Controlled(Control Classification No.) / Uncontrolled</span>
+    </td>
+  </tr>
+  <tr>
+    <td class="label-cell">이중용도품목<span class="eng">Dual-Use Item(s)</span></td>
+    <td colspan="3">${ck(data.dualUse,'yes')} 해당(Yes) &nbsp; ${ck(data.dualUse,'no')} 비해당(No) &nbsp; ${ck(data.dualUse,'except')} 예외적 비해당</td>
+  </tr>
+  <tr>
+    <td class="label-cell">원자력전용품목<span class="eng">Trigger Item(s)</span></td>
+    <td colspan="3">${ck(data.triggerItem,'yes')} 해당(Yes) &nbsp; ${ck(data.triggerItem,'no')} 비해당(No) &nbsp; ${ck(data.triggerItem,'except')} 예외적 비해당</td>
+  </tr>
+  <tr>
+    <td class="label-cell">군용물자품목<span class="eng">Munition(s)</span></td>
+    <td colspan="3">${ck(data.munition,'yes')} 해당(Yes) &nbsp; ${ck(data.munition,'no')} 비해당(No) &nbsp; ${ck(data.munition,'except')} 예외적 비해당</td>
+  </tr>
+  <tr>
+    <td class="label-cell">상황허가대상<span class="eng">Catch-all Item(s)</span></td>
+    <td colspan="3">${ck(data.catchAll,'yes')} 해당(Yes) &nbsp; ${ck(data.catchAll,'no')} 비해당(No)</td>
+  </tr>
+  <tr>
+    <td class="label-cell">통제번호<span class="eng">Control Classification No.</span></td>
+    <td colspan="3">${v(data,'controlNo')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">통제체제<span class="eng">Control Regime</span></td>
+    <td colspan="3">${ck(data.regime_wa_s,'yes')} [WA] 민감 &nbsp; ${ck(data.regime_wa_ss,'yes')} [WA] 초민감 &nbsp; ${ck(data.regime_nsg,'yes')} [NSG] Part1 민감 &nbsp; ${ck(data.regime_mtcr,'yes')} [MTCR] Cat1</td>
+  </tr>
+  <tr>
+    <th>⑥ 판정 상세근거<br><span class="eng">Classification comments</span></th>
+    <td colspan="4" class="value" style="min-height:80px;white-space:pre-wrap">${v(data,'classificationComments')}</td>
+  </tr>
+  <tr>
+    <th>⑦ 유효기간<br><span class="eng">Validity</span></th>
+    <td colspan="2" class="value">${v(data,'validity')}</td>
+    <th class="label-cell">⑧ 발급번호<br><span class="eng">Issue No.</span></th>
+    <td class="value">${v(data,'issueNo')}</td>
+  </tr>
+  <tr>
+    <td colspan="5" style="padding: 20px 40px; text-align: center;">
+      <p style="text-align: left; word-break: keep-all; margin-bottom: 5px;">「대외무역법」 제20조 및 동법 시행령 제36조제1항의 규정에 의하여 상기 품목에 대한 전략물자등 해당여부의 판정을 신청합니다.</p>
+      <p style="text-align: left; color: #555; font-size: 8pt; margin-bottom: 30px;">I request for classification of the items as stated above as stipulated in Article 20 of the 「Foreign Trade Act」 and Article 36(1) of the Enforcement Decree of the 「Foreign Trade Act」.</p>
+      <p style="margin-bottom: 20px; font-weight: bold;">20${v(data,'signYear')}. &nbsp;&nbsp;&nbsp;${v(data,'signMonth')}. &nbsp;&nbsp;&nbsp;${v(data,'signDay')}.</p>
+      <p>신 청 인 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${v(data,'applicantName')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(서명 또는 인)<br><span class="eng">Name of Applicant &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Signature</span></p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="5" style="padding: 20px 40px; text-align: center;">
+      <p style="text-align: left; word-break: keep-all; margin-bottom: 5px;">「대외무역법 시행령」 제36조제2항의 규정에 의하여 제⑤항과 같이 전략물자등 해당여부를 확인합니다.</p>
+      <p style="text-align: left; color: #555; font-size: 8pt; margin-bottom: 30px;">I hereby confirm the ruling of classification as stated in ⑤ above as stipulated in Article 36(2) of the Enforcement Decree of the 「Foreign Trade Act」.</p>
+      <p style="margin-bottom: 20px; font-weight: bold;">20&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.</p>
+      <p>기관장 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(인)<br><span class="eng">Sealed by Head of Classification Agency</span></p>
+    </td>
+  </tr>
+</table>
+<div class="note-area">
+  <p>* 주의사항:</p>
+  <p>1. ⑤ 판정결과가 "해당"인 물품을 수출할 경우 반드시 관계기관으로부터 수출허가를 받아야 하며, 무허가 수출시 관련 법령에 따라 처벌을 받게 됩니다.</p>
+  <p>2. 잘못된 정보 등에 따른 판정오류 및 그로 인한 무허가 수출 등에 따른 책임은 신청자에게 있습니다.</p>
+</div>
+</body></html>`;
+}
+
+function tmpl_05(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제5호 - 자가판정서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제5호 서식] Annexed paper No. 5</div>
+<div class="byeolji-title">자가판정서<br><span style="font-size:11pt">Self-classification Form</span></div>
+<table class="byeolji-table">
+  <tr>
+    <th rowspan="4" style="width:100px">① 판정인<br><span class="eng">Company</span></th>
+    <td class="label-cell">상 호<span class="eng">Name of Company</span></td>
+    <td class="value">${v(data,'companyName')}</td>
+    <td class="label-cell">대표자성명<span class="eng">Name of Representative</span></td>
+    <td class="value">${v(data,'ceoName')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">주 소<span class="eng">Address</span></td>
+    <td colspan="3" class="value">${v(data,'address')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">전 화<span class="eng">Telephone</span></td>
+    <td class="value">${v(data,'telephone')}</td>
+    <td class="label-cell">사업자등록번호<span class="eng">Business Reg. No.</span></td>
+    <td class="value">${v(data,'regNumber')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">무역업고유번호<span class="eng">Trade Business Code</span></td>
+    <td colspan="3" class="value">${v(data,'tradeCode')}</td>
+  </tr>
+  <tr>
+    <th>② HS번호<br><span class="eng">HS Code</span></th>
+    <td colspan="4" class="value">${v(data,'hsCode')}</td>
+  </tr>
+  <tr>
+    <th>③ 물품명<br><span class="eng">Item</span></th>
+    <td colspan="4" class="value">${v(data,'itemName')}</td>
+  </tr>
+  <tr>
+    <th rowspan="2">④ 형식 및 규격<br><span class="eng">Type and Specifications</span></th>
+    <td class="label-cell">모델번호 및 모델명<span class="eng">Model No. & Name</span></td>
+    <td colspan="3" class="value">${v(data,'modelNumber')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">규격/용도<span class="eng">Specifications/Usage</span></td>
+    <td colspan="3" class="value" style="min-height:50px;white-space:pre-wrap">${v(data,'specUsage')}</td>
+  </tr>
+  <tr>
+    <th>⑤ 관련 통제체제</th>
+    <td colspan="4">${ck(data.regime_wa,'yes')} WA &nbsp; ${ck(data.regime_nsg,'yes')} NSG &nbsp; ${ck(data.regime_mtcr,'yes')} MTCR &nbsp; ${ck(data.regime_ag,'yes')} AG &nbsp; ${ck(data.regime_cwc,'yes')} CWC &nbsp; ${ck(data.regime_bwc,'yes')} BWC &nbsp; ${ck(data.regime_att,'yes')} ATT</td>
+  </tr>
+  <tr>
+    <th rowspan="3">⑥ 판정결과<br><span class="eng">Classification results</span></th>
+    <td colspan="2">전략물자: ${ck(data.strategic,'yes')} 해당 &nbsp; ${ck(data.strategic,'no')} 비해당</td>
+    <td colspan="2">상황허가대상: ${ck(data.catchAll,'yes')} 해당 &nbsp; ${ck(data.catchAll,'no')} 비해당</td>
+  </tr>
+  <tr>
+    <td class="label-cell">통제번호</td>
+    <td colspan="3">${v(data,'controlNo')}</td>
+  </tr>
+  <tr>
+    <td colspan="4">${ck(data.regime_wa_s,'yes')} [WA] 민감 &nbsp; ${ck(data.regime_wa_ss,'yes')} [WA] 초민감 &nbsp; ${ck(data.regime_nsg_p1,'yes')} [NSG] Part1 민감 &nbsp; ${ck(data.regime_mtcr_c1,'yes')} [MTCR] Cat1</td>
+  </tr>
+  <tr>
+    <th>⑦ 판정 상세근거<br><span class="eng">Comments</span></th>
+    <td colspan="4" class="value" style="min-height:80px;white-space:pre-wrap">${v(data,'classificationComments')}</td>
+  </tr>
+  <tr>
+    <th>⑧ 자가판정 등록번호<br><span class="eng">Reg. No.</span></th>
+    <td colspan="4" class="value">${v(data,'selfClassRegNo')}</td>
+  </tr>
+  <tr>
+    <th>⑨ 교육이수번호<br><span class="eng">Education Reg. No.</span></th>
+    <td colspan="4" class="value">${v(data,'educationRegNo')}</td>
+  </tr>
+  <tr>
+    <td colspan="5" style="padding: 20px 40px; text-align: center;">
+      <p style="text-align: left; word-break: keep-all; margin-bottom: 5px;">「전략물자 수출입고시」제13조의 규정에 의하여 당사의 책임 하에 ⑥과 같이 전략물자등 해당여부를 확인합니다.</p>
+      <p style="text-align: left; color: #555; font-size: 8pt; margin-bottom: 30px;">I hereby confirm and take full responsibility of the result of self-classification as stated in ⑥ above as stipulated in Article 13 of Public Notice on Trade of Strategic Items.</p>
+      <p style="margin-bottom: 20px; font-weight: bold;">20${v(data,'signYear')}. &nbsp;&nbsp;&nbsp;${v(data,'signMonth')}. &nbsp;&nbsp;&nbsp;${v(data,'signDay')}.</p>
+      <p>대표자 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${v(data,'ceoName')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(서명 또는 인)<br><span class="eng">Representative of the Company &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Signature)</span></p>
+    </td>
+  </tr>
+</table>
+<div class="note-area">
+  <p>* 주의사항:</p>
+  <p>1. ⑥ 판정결과가 "해당"인 물품을 수출할 경우 반드시 관계기관으로부터 수출허가를 받아야 하며, 무허가 수출시 관련 법령에 따라 처벌을 받게 됩니다.</p>
+  <p>2. 잘못된 정보 등에 따른 판정오류 및 그로 인한 무허가 수출 등에 따른 책임은 신청자에게 있습니다.</p>
+</div>
+</body></html>`;
+}
+
+// ─── 별지 제13호: 자율준수무역거래자 지정신청서 ───
+function tmpl_13(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제13호 - 지정신청서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제13호 서식]</div>
+<div class="byeolji-title">자율준수무역거래자 지정신청서</div>
+<p style="text-align:right;font-size:9pt;margin-bottom:10px">처리기간: 40일</p>
+<table class="byeolji-table">
+  <tr><td class="label-cell-wide">회사명</td><td colspan="3">${v(data,'companyName')}</td></tr>
+  <tr><td class="label-cell-wide">사업자등록번호</td><td>${v(data,'regNumber')}</td><td class="label-cell">무역업고유(신고)번호</td><td>${v(data,'tradeCode')}</td></tr>
+  <tr><td class="label-cell-wide">대표이사</td><td colspan="3">${v(data,'ceoName')}</td></tr>
+  <tr><td class="label-cell-wide">주 소</td><td colspan="3">${v(data,'address')}</td></tr>
+  <tr><td class="label-cell-wide">희망등급</td><td colspan="3">${ck(data.grade,'A')} A등급 &nbsp;&nbsp; ${ck(data.grade,'AA')} AA등급 &nbsp;&nbsp; ${ck(data.grade,'AAA')} AAA등급 (* 복수선택가능)</td></tr>
+  <tr><th colspan="4" style="background:#e8e8e8">자율준수관리기구의 장</th></tr>
+  <tr><td class="label-cell-wide">성 명</td><td>${v(data,'headName')}</td><td class="label-cell">소 속</td><td>${v(data,'headDept')}</td></tr>
+  <tr><td class="label-cell-wide">직 위</td><td>${v(data,'headPosition')}</td><td class="label-cell">전 화</td><td>${v(data,'headPhone')}</td></tr>
+  <tr><td class="label-cell-wide">팩 스</td><td>${v(data,'headFax')}</td><td class="label-cell">휴대전화</td><td>${v(data,'headMobile')}</td></tr>
+  <tr><td class="label-cell-wide">전자우편</td><td colspan="3">${v(data,'headEmail')}</td></tr>
+  <tr><th colspan="4" style="background:#e8e8e8">자율준수체제 담당자</th></tr>
+  <tr><td class="label-cell-wide">성 명</td><td>${v(data,'staffName')}</td><td class="label-cell">소 속</td><td>${v(data,'staffDept')}</td></tr>
+  <tr><td class="label-cell-wide">직 위</td><td>${v(data,'staffPosition')}</td><td class="label-cell">전 화</td><td>${v(data,'staffPhone')}</td></tr>
+  <tr><td class="label-cell-wide">팩 스</td><td>${v(data,'staffFax')}</td><td class="label-cell">휴대전화</td><td>${v(data,'staffMobile')}</td></tr>
+  <tr><td class="label-cell-wide">전자우편</td><td colspan="3">${v(data,'staffEmail')}</td></tr>
+  <tr><th colspan="4" style="background:#e8e8e8">판정담당자</th></tr>
+  <tr><td class="label-cell-wide">성 명</td><td>${v(data,'classifierName')}</td><td class="label-cell">소 속</td><td>${v(data,'classifierDept')}</td></tr>
+  <tr><td class="label-cell-wide">직 위</td><td>${v(data,'classifierPosition')}</td><td class="label-cell">전 화</td><td>${v(data,'classifierPhone')}</td></tr>
+  <tr><td class="label-cell-wide">팩 스</td><td>${v(data,'classifierFax')}</td><td class="label-cell">휴대전화</td><td>${v(data,'classifierMobile')}</td></tr>
+  <tr><td class="label-cell-wide">전자우편</td><td colspan="3">${v(data,'classifierEmail')}</td></tr>
+</table>
+<div class="signature-area">
+  <p style="font-size:9pt;text-align:left">「전략물자수출입고시」제78조의 규정에 의하여 위와 같이 자율준수무역거래자로 지정해 줄 것을 신청합니다. 향후 모든 수출거래에 대해 「대외무역법」 등을 준수할 것이며, 자율준수체제의 중요 사항 변경이나 의심스러운 거래에 대해서는 산업통상부장관에게 우선적으로 보고하겠습니다.</p>
+  <p style="margin-top:15px">20${v(data,'signYear')}. ${v(data,'signMonth')}. ${v(data,'signDay')}.</p>
+  <p style="margin-top:10px">대표자 ${v(data,'ceoName')} (서명 또는 인)</p>
+</div>
+</body></html>`;
+}
+
+// ─── 별지 제15호: 회사소개서 ───
+function tmpl_15(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제15호 - 회사소개서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제15호 서식] Annexed paper No. 15</div>
+<div class="byeolji-title">회 사 소 개 서</div>
+<table class="byeolji-table">
+  <tr><td class="label-cell-wide">① 회사명(영문)</td><td colspan="3">${v(data,'companyName')}<br><span class="eng">${v(data,'companyNameEn')}</span></td></tr>
+  <tr><td class="label-cell-wide">② 대표자</td><td>직책: ${v(data,'ceoTitle')}</td><td colspan="2">성명: ${v(data,'ceoName')}</td></tr>
+  <tr><td class="label-cell-wide">③ 주소</td><td colspan="3">${v(data,'address')}</td></tr>
+  <tr><td class="label-cell-wide">④ 사업내용</td><td>업태: ${v(data,'businessType')}</td><td>종목: ${v(data,'businessItem')}</td><td>외투기업여부: ${v(data,'foreignInvest','해당없음')}</td></tr>
+  <tr><td class="label-cell-wide">⑤ 주요취급품목</td><td colspan="3">${v(data,'mainProducts')}</td></tr>
+  <tr><td class="label-cell-wide">⑥ 기업규모</td><td colspan="3">자본금 ${v(data,'capital')} 백만원 / 임직원수 ${v(data,'employeeCount')} 명 / 연간매출액 ${v(data,'revenue')} 백만원 (신청직전년도)</td></tr>
+  <tr>
+    <td class="label-cell-wide" rowspan="2">⑦ 주요주주</td>
+    <td>주주명: ${v(data,'shareholder1')}</td><td>소유비율: ${v(data,'shareRatio1')}%</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>주주명: ${v(data,'shareholder2')}</td><td>소유비율: ${v(data,'shareRatio2')}%</td>
+    <td></td>
+  </tr>
+  <tr><td class="label-cell-wide">⑧ 자율수출관리기구의 장</td><td>직위: ${v(data,'headPosition')}</td><td colspan="2">성명: ${v(data,'headName')}</td></tr>
+  <tr><td class="label-cell-wide">⑨ 자율준수관리기구의 명칭</td><td colspan="3">${v(data,'orgName')}</td></tr>
+  <tr><td class="label-cell-wide">⑩ 수출관리 종사자 총수</td><td colspan="3">${v(data,'totalStaff')} 명 (전임 ${v(data,'fullTimeStaff')} 명)</td></tr>
+  <tr><td class="label-cell-wide">⑪ 담당자</td><td>소속: ${v(data,'contactDept')} / 성명: ${v(data,'contactName')}</td><td>전화: ${v(data,'contactPhone')}</td><td>전자우편: ${v(data,'contactEmail')}</td></tr>
+  <tr><td class="label-cell-wide">⑫ 담당자 주소</td><td colspan="3">${v(data,'contactAddress','③과 동일')}</td></tr>
+  <tr><td class="label-cell-wide">⑬ 수출총액</td><td colspan="3">${v(data,'exportTotal')} 백만원 / 매출액 대비 ${v(data,'exportRatio')}% (신청직전년도) / 전략물자 비율 약 ${v(data,'strategicRatio')}%</td></tr>
+  <tr><td class="label-cell-wide">⑭ 나의1 지역 수출상황</td><td colspan="3" style="white-space:pre-wrap">${v(data,'exportRegion1')}</td></tr>
+  <tr><td class="label-cell-wide">⑮ 나의2 지역 수출상황</td><td colspan="3" style="white-space:pre-wrap">${v(data,'exportRegion2')}</td></tr>
+  <tr><td class="label-cell-wide">⑯ 전략물자 목적지국가 및 수입자</td><td colspan="3" style="white-space:pre-wrap">${v(data,'strategicDestinations')}</td></tr>
+  <tr><td class="label-cell-wide">⑰ 상황허가대상품목 목적지국가 및 수입자</td><td colspan="3" style="white-space:pre-wrap">${v(data,'catchAllDestinations')}</td></tr>
+  <tr><td class="label-cell-wide">⑱ 우려거래자 수출상황</td><td colspan="3" style="white-space:pre-wrap">${v(data,'concernedParties')}</td></tr>
+  <tr><td class="label-cell-wide">⑲ 연간 개별수출허가건수</td><td colspan="3">전략물자 ${v(data,'strategicPermitCount')} 건 / 상황허가대상품목 ${v(data,'catchAllPermitCount')} 건</td></tr>
+  <tr><td class="label-cell-wide">⑳ 비고</td><td colspan="3" style="min-height:60px;white-space:pre-wrap">${v(data,'remarks')}</td></tr>
+</table>
+</body></html>`;
+}
+
+// ─── 별지 제16호: 사전거래보고서 ───
+function tmpl_16(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제16호 - 사전거래보고서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제16호 서식]</div>
+<div class="byeolji-title">사전거래보고서</div>
+<table class="byeolji-table">
+  <tr><th colspan="4" style="background:#e8e8e8">□ 무역거래자 정보</th></tr>
+  <tr><td class="label-cell-wide">사업자등록번호</td><td colspan="3">${v(data,'regNumber')}</td></tr>
+  <tr><td class="label-cell-wide">① 수출자</td><td colspan="3">${v(data,'exporter')}</td></tr>
+  <tr><td class="label-cell-wide">② 실무담당자</td><td colspan="3">${v(data,'contactPerson')}</td></tr>
+  <tr><td class="label-cell-wide">③ 구매자</td><td colspan="3">${v(data,'buyer')}</td></tr>
+  <tr><td class="label-cell-wide">④ 제조자</td><td colspan="3">${v(data,'manufacturer')}</td></tr>
+  <tr><td class="label-cell-wide">⑤ 최종수하인</td><td colspan="3">${v(data,'consignee')}</td></tr>
+  <tr><td class="label-cell-wide">⑥ 최종사용자</td><td colspan="3">${v(data,'endUser')}</td></tr>
+  <tr><td class="label-cell-wide">⑦ 거래유형</td><td colspan="3">${ck(data.tradeType,'export')} 수출 &nbsp; ${ck(data.tradeType,'broker')} 중개 &nbsp; ${ck(data.tradeType,'transit')} 경유 또는 환적</td></tr>
+  <tr><td class="label-cell-wide">⑧ 최종목적지국가</td><td>${v(data,'destCountry')}</td><td class="label-cell">⑨ 최종사용용도</td><td>${v(data,'endUse')}</td></tr>
+  <tr><td class="label-cell-wide">⑩ 판정번호</td><td>${v(data,'classNo')}</td><td class="label-cell">⑪ HS 번호</td><td>${v(data,'hsCode')}</td></tr>
+  <tr><td class="label-cell-wide">⑫ 통제번호</td><td colspan="3">${v(data,'controlNo')}</td></tr>
+  <tr><td class="label-cell-wide">⑬ 품명 및 규격</td><td>${v(data,'itemSpec')}</td><td class="label-cell">⑭ 단위 및 수량</td><td>${v(data,'quantity')}</td></tr>
+  <tr><td class="label-cell-wide">⑮ 수출액(USD)</td><td colspan="3">${v(data,'exportAmount')}</td></tr>
+  <tr><th colspan="4" style="background:#e8e8e8">□ 최종사용자 정보</th></tr>
+  <tr><td class="label-cell-wide">⑯ 회사명</td><td>${v(data,'euCompany')}</td><td class="label-cell">⑰ 주소지</td><td>${v(data,'euAddress')}</td></tr>
+  <tr><td class="label-cell-wide">⑱ 업종/업태</td><td>${v(data,'euBusiness')}</td><td class="label-cell">⑲ 자본금</td><td>${v(data,'euCapital')}</td></tr>
+  <tr><td class="label-cell-wide">⑳ 고용인원</td><td>${v(data,'euEmployees')}</td><td class="label-cell">㉑ 주요고객사</td><td>${v(data,'euClients')}</td></tr>
+  <tr><td class="label-cell-wide">㉒ 소유주</td><td>${v(data,'euOwner')}</td><td class="label-cell">㉓ 지분구조</td><td>${v(data,'euShares')}</td></tr>
+  <tr><td class="label-cell-wide">㉔ 홈페이지</td><td>${v(data,'euWebsite')}</td><td class="label-cell">㉕ 주요생산품</td><td>${v(data,'euProducts')}</td></tr>
+  <tr><th colspan="4" style="background:#e8e8e8">□ 허가면제사유</th></tr>
+  <tr><td colspan="4" style="white-space:pre-wrap">${v(data,'exemptionReason')}</td></tr>
+  <tr><th colspan="4" style="background:#e8e8e8">□ 거래내역 (수출 후 작성)</th></tr>
+  <tr><td class="label-cell-wide">㉗ 선적일</td><td>${v(data,'shipDate')}</td><td class="label-cell">㉘ B/L 번호</td><td>${v(data,'blNumber')}</td></tr>
+  <tr><td class="label-cell-wide">㉙ 수출신고수리번호</td><td colspan="3">${v(data,'exportDeclNo')}</td></tr>
+</table>
+<div class="signature-area">
+  <p>위 신고내용이 사실임을 확인합니다.</p>
+  <p style="margin-top:15px">20${v(data,'signYear')}. ${v(data,'signMonth')}. ${v(data,'signDay')}.</p>
+  <p style="margin-top:10px">신고인 ${v(data,'signerName')} (서명 또는 인)</p>
+</div>
+</body></html>`;
+}
+
+// ─── 별지 제16호의2: 사후거래보고서 (사전거래보고서와 거의 동일 구조) ───
+function tmpl_16_2(data) {
+  let html = tmpl_16(data);
+  return html.replace('별지 제16호 서식', '별지 제16호의2 서식')
+             .replace('사전거래보고서', '사후거래보고서')
+             .replace('별지 제16호 - 사전거래보고서', '별지 제16호의2 - 사후거래보고서');
+}
+
+// ─── 별지 제18호: 자율준수체제 운영 보고서 ───
+function tmpl_18(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제18호 - 운영 보고서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제18호 서식] Annexed paper No. 18</div>
+<div class="byeolji-title">자율준수체제 운영 보고서</div>
+<table class="byeolji-table">
+  <tr>
+    <th rowspan="3" style="width:180px">① 자율준수관리규정<br>운영현황</th>
+    <td class="label-cell">제정</td><td>${v(data,'regEstablished')}</td>
+  </tr>
+  <tr><td class="label-cell">개정</td><td>${v(data,'regRevised')}</td></tr>
+  <tr><td class="label-cell">주요 개정사항</td><td style="white-space:pre-wrap">${v(data,'regChanges')}</td></tr>
+  <tr>
+    <th>② 자율준수관리조직<br>운영현황</th>
+    <td class="label-cell">자율준수관리기구의 장 / 전담기구인원 / 기술부문 / 영업부문</td>
+    <td style="white-space:pre-wrap">${v(data,'orgStatus')}</td>
+  </tr>
+  <tr>
+    <th rowspan="2">③ 수출통제교육현황</th>
+    <td class="label-cell">외부교육 참가실적</td><td style="white-space:pre-wrap">${v(data,'extTraining')}</td>
+  </tr>
+  <tr><td class="label-cell">내부교육 추진실적</td><td style="white-space:pre-wrap">${v(data,'intTraining')}</td></tr>
+  <tr>
+    <th>④ 내부감사 운영현황</th>
+    <td class="label-cell">내부감사 운영실적</td><td style="white-space:pre-wrap">${v(data,'auditStatus')}</td>
+  </tr>
+</table>
+<div class="signature-area">
+  <p>「대외무역법」 제25조 제3항 및 동법 시행령 제45조의 규정에 의하여 20${v(data,'reportYear')}년도 당사의 자율준수체제 운영현황을 보고합니다.</p>
+  <p style="margin-top:15px">20${v(data,'signYear')}. ${v(data,'signMonth')}. ${v(data,'signDay')}.</p>
+  <p style="margin-top:10px">보고자 ${v(data,'reporterName')} (서명 또는 인)</p>
+  <p>산업통상부장관 귀중</p>
+</div>
+</body></html>`;
+}
+
+// ─── 별지 제19호: 실적 보고서 ───
+function tmpl_19(data) {
+  const getRows = (key) => data[key] && Array.isArray(data[key]) ? data[key] : [];
+  
+  const brokerageRows = getRows('②_중개_상세내역');
+  const compRows = getRows('③-2_포괄수출_허가_건별_상세실적');
+  const techRows = getRows('④_1._전략기술_무형이전_(A등급_이상)');
+  const exemptRows = getRows('④_2._개별수출허가_면제대상_(AAA등급_한함)');
+  const selfRows = getRows('⑤_1._자가판정_건수');
+  const expertRows = getRows('⑤_2._전문판정_건수');
+
+  const renderTableRows = (rows, cols) => {
+    if (rows.length === 0) return '해당없음(N/A)';
+    return rows.map(r => cols.map(c => v(r, c)).join(' / ')).join('<br>');
+  };
+
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제19호 - 실적 보고서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제19호 서식] Annexed paper No. 19</div>
+<div class="byeolji-title">자율준수무역거래자 실적 보고서</div>
+<table class="byeolji-table">
+  <tr><th style="width:180px">① 중개실적</th><td colspan="2">중개 건수/금액: ${v(data,'brokerage_count_amount')}</td></tr>
+  <tr><th rowspan="6">② 중개 상세내역</th>
+      <td style="width:150px; background:#f5f5f5;">- 품명(모델) 및 통제번호</td>
+      <td style="white-space:pre-wrap">${brokerageRows.map(r => r.item || '').join('<br>')}</td>
+  </tr>
+  <tr>
+      <td style="background:#f5f5f5;">- 용도</td>
+      <td style="white-space:pre-wrap">${brokerageRows.map(r => r.usage || '').join('<br>')}</td>
+  </tr>
+  <tr>
+      <td style="background:#f5f5f5;">- 수출국가명 및 지역</td>
+      <td style="white-space:pre-wrap">${brokerageRows.map(r => r.export_country || '').join('<br>')}</td>
+  </tr>
+  <tr>
+      <td style="background:#f5f5f5;">- 수입국가명 및 지역</td>
+      <td style="white-space:pre-wrap">${brokerageRows.map(r => r.import_country || '').join('<br>')}</td>
+  </tr>
+  <tr>
+      <td style="background:#f5f5f5;">- 수입자</td>
+      <td style="white-space:pre-wrap">${brokerageRows.map(r => r.importer || '').join('<br>')}</td>
+  </tr>
+  <tr>
+      <td style="background:#f5f5f5;">- 최종수하인</td>
+      <td style="white-space:pre-wrap">${brokerageRows.map(r => r.end_user || '').join('<br>')}</td>
+  </tr>
+  <tr>
+      <th rowspan="2">③ 포괄수출허가 및<br>포괄수출실적*</th>
+      <td style="background:#f5f5f5;">- 포괄수출허가건수/실적건수/금액</td>
+      <td>${v(data,'comprehensive_count_amount')}</td>
+  </tr>
+  <tr>
+      <td style="background:#f5f5f5;">- 허가 건별 상세실적 및 금액</td>
+      <td style="white-space:pre-wrap">${renderTableRows(compRows, ['details', 'amount'])}</td>
+  </tr>
+  <tr>
+      <th rowspan="2">④ 허가면제<br>실적보고</th>
+      <td style="background:#f5f5f5;">④ 1. 전략기술의 무형이전<br>(A등급 이상)</td>
+      <td style="white-space:pre-wrap">${renderTableRows(techRows, ['tech', 'target', 'period'])}</td>
+  </tr>
+  <tr>
+      <td style="background:#f5f5f5;">④ 2. 그 외 개별수출허가 면제대상<br>(AAA등급에 한함)</td>
+      <td style="white-space:pre-wrap">${renderTableRows(exemptRows, ['type', 'history', 'consumer'])}</td>
+  </tr>
+  <tr>
+      <th>⑤ 전략물자 판정</th>
+      <td colspan="2" style="white-space:pre-wrap">자가판정:<br>${renderTableRows(selfRows, ['classNo', 'criteria', 'result'])}<br><br>전문판정:<br>${renderTableRows(expertRows, ['classNo', 'criteria', 'result'])}</td>
+  </tr>
+</table>
+<div class="signature-area">
+  <p>「대외무역법」 제25조 제3항 및 동법 시행령 제45조의 규정에 의하여 20${v(data,'reportYear')}년 ${v(data,'reportHalf','상')}/하반기 자율준수무역거래자 포괄수출실적 및 허가면제내역을 보고합니다.</p>
+  <p style="margin-top:15px">20${v(data,'signYear')}. ${v(data,'signMonth')}. ${v(data,'signDay')}.</p>
+  <p style="margin-top:10px">보고자 ${v(data,'reporterName')} (서명 또는 인)</p>
+  <p>산업통상자원부장관 귀하</p>
+</div>
+</body></html>`;
+}
+
+
+// ─── 별지 제24호: 자진신고서 ───
+function tmpl_24(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제24호 - 자진신고서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제24호 서식]</div>
+<div class="byeolji-title">자 진 신 고 서</div>
+<table class="byeolji-table">
+  <tr><th rowspan="5" style="width:80px">신<br>고<br>자</th>
+    <td class="label-cell">상호</td><td>${v(data,'companyName')}</td>
+    <td class="label-cell">성 명</td><td>${v(data,'reporterFullName')}</td></tr>
+  <tr><td class="label-cell">대표자</td><td colspan="3">${v(data,'ceoName')}</td></tr>
+  <tr><td class="label-cell">주소</td><td colspan="3">${v(data,'address')}</td></tr>
+  <tr><td class="label-cell">실무담당자</td><td>${v(data,'contactPerson')}</td><td class="label-cell">전화번호</td><td>${v(data,'telephone')}</td></tr>
+  <tr><td class="label-cell">사업자등록번호</td><td colspan="3">${v(data,'regNumber')}</td></tr>
+</table>
+<table class="byeolji-table" style="margin-top:15px">
+  <tr><th colspan="4" style="background:#e8e8e8">신고 내용</th></tr>
+  <tr><td class="label-cell-wide">① 신고내용</td><td colspan="3" style="white-space:pre-wrap">${v(data,'reportSummary')}</td></tr>
+  <tr><td class="label-cell-wide">② 통관일자</td><td>${v(data,'customsDate')}</td><td class="label-cell">③ B/L 번호</td><td>${v(data,'blNumber')}</td></tr>
+  <tr><td class="label-cell-wide">④ 수출신고수리번호</td><td colspan="3">${v(data,'exportDeclNo')}</td></tr>
+  <tr><td class="label-cell-wide">⑤ 최종사용용도</td><td colspan="3">${v(data,'endUse')}</td></tr>
+  <tr><th colspan="4">⑥ 수출품목</th></tr>
+  <tr><td class="label-cell">HS 번호</td><td>${v(data,'hsCode')}</td><td class="label-cell">통제번호</td><td>${v(data,'controlNo')}</td></tr>
+  <tr><td class="label-cell">품명 및 규격</td><td>${v(data,'itemSpec')}</td><td class="label-cell">단위 및 수량</td><td>${v(data,'quantity')}</td></tr>
+  <tr><td class="label-cell">단가</td><td>${v(data,'unitPrice')}</td><td class="label-cell">가액</td><td>${v(data,'totalPrice')}</td></tr>
+  <tr><th colspan="4">⑦ 거래 상대방 정보</th></tr>
+  <tr><td class="label-cell">구매자</td><td colspan="3">상호: ${v(data,'buyerName')} / 대표자: ${v(data,'buyerCeo')} / 전화: ${v(data,'buyerPhone')} / 주소: ${v(data,'buyerAddress')}</td></tr>
+  <tr><td class="label-cell">최종수하인</td><td colspan="3">상호: ${v(data,'consigneeName')} / 대표자: ${v(data,'consigneeCeo')} / 전화: ${v(data,'consigneePhone')} / 주소: ${v(data,'consigneeAddress')}</td></tr>
+  <tr><td class="label-cell">최종사용자</td><td colspan="3">상호: ${v(data,'endUserName')} / 대표자: ${v(data,'endUserCeo')} / 전화: ${v(data,'endUserPhone')} / 주소: ${v(data,'endUserAddress')}</td></tr>
+  <tr><th colspan="4">⑧ 위반 경위</th></tr>
+  <tr><td colspan="4" style="min-height:100px;white-space:pre-wrap">${v(data,'violationDetails')}</td></tr>
+  <tr><th colspan="4">첨부 자료</th></tr>
+  <tr><td colspan="4">
+    ${ck(data.attach1,'yes')} 고시 제98조 제3항 1호 관련 (자료설명: ${v(data,'attach1Desc')})<br>
+    ${ck(data.attach2,'yes')} 고시 제98조 제3항 2호 관련 (자료설명: ${v(data,'attach2Desc')})<br>
+    ${ck(data.attach3,'yes')} 고시 제98조 제3항 3호 관련 (자료설명: ${v(data,'attach3Desc')})
+  </td></tr>
+</table>
+<div class="signature-area">
+  <p style="font-size:9pt;text-align:left">「전략물자 수출입고시」 제98조의 규정에 의거하여 「대외무역법」 제19조, 제19조의2, 제19조의3, 제19조의4, 제19조의5 또는 동 고시 제26조제1항, 제26조제2항, 제54조의2제1항, 제59조의2제1항의 위반 사실을 위와 같이 자진신고 합니다.</p>
+  <p style="margin-top:15px">20${v(data,'signYear')}년 ${v(data,'signMonth')}월 ${v(data,'signDay')}일</p>
+  <p style="margin-top:10px">대표자 ${v(data,'ceoName')} (서명 또는 직인)</p>
+</div>
+</body></html>`;
+}
+
+// ─── 별지 제25호: 재발 방지 계획서 ───
+function tmpl_25(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제25호 - 재발 방지 계획서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제25호 서식]</div>
+<div class="byeolji-title">재발 방지 계획서</div>
+<table class="byeolji-table">
+  <tr><td class="label-cell-wide">신고자 (상호, 성명)</td><td>${v(data,'companyName')} ${v(data,'reporterName')}</td></tr>
+  <tr><td class="label-cell-wide">신고일자</td><td>${v(data,'reportDate')}</td></tr>
+  <tr><td class="label-cell-wide">신고내용</td><td style="min-height:60px;white-space:pre-wrap">${v(data,'reportSummary')}</td></tr>
+  <tr><td class="label-cell-wide">재발 방지 계획</td><td style="min-height:200px;white-space:pre-wrap">${v(data,'preventionPlan')}</td></tr>
+  <tr><td class="label-cell-wide">지원 사업 활용 희망 여부</td><td>${ck(data.supportTraining,'yes')} 전략물자 정규 교육 &nbsp;&nbsp; ${ck(data.supportConsulting,'yes')} 자율준수 컨설팅</td></tr>
+</table>
+</body></html>`;
+}
+
+// ─── 별지 제1호: 개별수출허가신청서 ───
+function tmpl_01(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제1호 - 전략물자 개별수출허가신청서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제1호 서식] Annexed paper No. 1</div>
+<div class="byeolji-title">전략물자 개별수출허가신청서<br><span style="font-size:11pt">Application for Individual Export License of Strategic Items</span></div>
+<table class="byeolji-table">
+  <tr>
+    <th rowspan="4" style="width:100px">① 수출자<br><span class="eng">Exporter</span></th>
+    <td class="label-cell">상 호<span class="eng">Name of Company</span></td>
+    <td colspan="3" class="value">${v(data,'exporterCompany')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">대표자<span class="eng">Representative</span></td>
+    <td class="value">${v(data,'exporterCeo')}</td>
+    <td class="label-cell">사업자등록번호<span class="eng">Business Reg. No.</span></td>
+    <td class="value">${v(data,'exporterRegNum')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">주 소<span class="eng">Address</span></td>
+    <td colspan="3" class="value">${v(data,'exporterAddress')}</td>
+  </tr>
+  <tr>
+    <td colspan="4" class="label-cell">※ 본 신청서는 시스템(YesTrade)에 입력한 데이터와 일치해야 합니다.</td>
+  </tr>
+  <tr>
+    <th rowspan="3">② 수하인<br><span class="eng">Consignee</span></th>
+    <td class="label-cell">상호<span class="eng">Name of Company</span></td>
+    <td colspan="3" class="value">${v(data,'buyerName')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">주 소<span class="eng">Address</span></td>
+    <td colspan="3" class="value">${v(data,'buyerAddress')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">최종사용자 상호</td>
+    <td colspan="3" class="value">${v(data,'endUserName')} (주소: ${v(data,'endUserAddress')})</td>
+  </tr>
+  <tr>
+    <th>③ 수출품 내역<br><span class="eng">Item Details</span></th>
+    <td colspan="4">
+      HS번호: ${v(data,'hsCode')} / 통제번호: ${v(data,'controlNo')}<br>
+      품명: ${v(data,'itemName')} / 수량: ${v(data,'quantity')} / 단가 및 총액(USD): ${v(data,'price')}
+    </td>
+  </tr>
+  <tr>
+    <th>④ 최종목적지국가<br><span class="eng">Destination</span></th>
+    <td colspan="4" class="value">${v(data,'destCountry')}</td>
+  </tr>
+</table>
+<div class="signature-area">
+  <p>「대외무역법」 제19조 및 동법 시행령 제32조의 규정에 의하여 위와 같이 전략물자 개별수출허가를 신청합니다.</p>
+  <p style="margin-top:15px">20${v(data,'signYear')}년 ${v(data,'signMonth')}월 ${v(data,'signDay')}일</p>
+  <p style="margin-top:10px">신청인 ${v(data,'exporterCeo')} (서명 또는 인)</p>
+</div>
+</body></html>`;
+}
+
+// ─── 별지 제6호: 포괄수출허가신청서 ───
+function tmpl_06(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제6호 - 포괄수출허가신청서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제6호 서식] Annexed paper No. 6</div>
+<div class="byeolji-title">전략물자 포괄수출허가신청서<br><span style="font-size:11pt">Application for Comprehensive Export License of Strategic Items</span></div>
+<table class="byeolji-table">
+  <tr>
+    <th rowspan="3" style="width:100px">① 수출자<br><span class="eng">Exporter</span></th>
+    <td class="label-cell">상 호<span class="eng">Name of Company</span></td>
+    <td class="value">${v(data,'exporterCompany')}</td>
+    <td class="label-cell">대표자<span class="eng">Representative</span></td>
+    <td class="value">${v(data,'exporterCeo')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">주 소<span class="eng">Address</span></td>
+    <td colspan="3" class="value">${v(data,'exporterAddress')}</td>
+  </tr>
+  <tr>
+    <td class="label-cell">CP 지정등급<span class="eng">CP Grade</span></td>
+    <td colspan="3" class="value" style="font-weight:bold;color:#2563eb">${v(data,'cpGrade')} 등급</td>
+  </tr>
+  <tr>
+    <th>② 신청 유형<br><span class="eng">Type</span></th>
+    <td colspan="4" class="value">${v(data,'permitType')}</td>
+  </tr>
+  <tr>
+    <th>③ 품목군<br><span class="eng">Item Category</span></th>
+    <td colspan="4" class="value">HS번호: ${v(data,'hsCode')} / 통제번호: ${v(data,'controlNo')}</td>
+  </tr>
+  <tr>
+    <th>④ 최종사용자<br><span class="eng">End Users</span></th>
+    <td colspan="4" class="value" style="min-height:80px;white-space:pre-wrap">${v(data,'endUsers')}</td>
+  </tr>
+  <tr>
+    <th>⑤ 유효기간<br><span class="eng">Duration</span></th>
+    <td colspan="4" class="value">${v(data,'duration')}</td>
+  </tr>
+</table>
+<div class="signature-area">
+  <p>「대외무역법」 제19조 및 동법 시행령 제32조의 규정에 의하여 위와 같이 전략물자 포괄수출허가를 신청합니다.</p>
+  <p style="margin-top:15px">20${v(data,'signYear')}년 ${v(data,'signMonth')}월 ${v(data,'signDay')}일</p>
+  <p style="margin-top:10px">신청인 ${v(data,'exporterCeo')} (서명 또는 인)</p>
+</div>
+</body></html>`;
+}
+
+// ─── 부속서류 (L-03 ~ L-09) ───
+function tmpl_01_03(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제2호 - 최종수하인 및 구매자 진술서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제2호 서식] Annexed paper No. 2</div>
+<div class="byeolji-title">최종수하인 및 구매자 진술서<br><span style="font-size:11pt">Statement by Ultimate Consignee and Purchaser</span></div>
+<table class="byeolji-table">
+  <tr><td class="label-cell-wide">수출자 (Exporter)</td><td colspan="3">${v(data,'exporterName')}</td></tr>
+  <tr><td class="label-cell-wide">최종사용자 (End-User)</td><td colspan="3">${v(data,'endUserName')}</td></tr>
+  <tr><td class="label-cell-wide">수출품 내역 (Description)</td><td colspan="3" style="white-space:pre-wrap">${v(data,'itemDetails')}</td></tr>
+  <tr><td class="label-cell-wide">수량/금액 (Qty/Value)</td><td colspan="3">${v(data,'quantity')}</td></tr>
+  <tr><th colspan="4" style="background:#e8e8e8">서명권자 (최종수하인 / 구매자)</th></tr>
+  <tr><td class="label-cell-wide">회사명</td><td>${v(data,'consigneeCompany')}</td><td class="label-cell">대표자명</td><td>${v(data,'consigneeRep')}</td></tr>
+  <tr><td class="label-cell-wide">주소</td><td colspan="3">${v(data,'consigneeAddress')}</td></tr>
+</table>
+<div class="signature-area">
+  <p style="font-size:9pt;text-align:left">본인은 위 물품의 최종수하인/구매자로서 동 물품을 대량파괴무기 및 그 운반수단의 설계, 개발, 생산, 사용 목적으로 사용하지 아니하며, 귀국 정부의 서면동의 없이 제3자에게 양도하지 않을 것임을 서약합니다.</p>
+  <p style="margin-top:15px">20${v(data,'signYear', '  ')}년 ${v(data,'signMonth', '  ')}월 ${v(data,'signDay', '  ')}일</p>
+  <p style="margin-top:10px">서명(Signature): _________________</p>
+</div>
+</body></html>`;
+}
+
+function tmpl_01_04(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>별지 제2호의2 - 최종사용자 서약서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">[별지 제2호의2 서식] Annexed paper No. 2-2</div>
+<div class="byeolji-title">최종사용자 서약서<br><span style="font-size:11pt">End-User Statement</span></div>
+<table class="byeolji-table">
+  <tr><td class="label-cell-wide">수출자</td><td colspan="3">${v(data,'exporterName')}</td></tr>
+  <tr><td class="label-cell-wide">품명 및 규격</td><td colspan="3" style="white-space:pre-wrap">${v(data,'itemDetails')}</td></tr>
+  <tr><td class="label-cell-wide">수량 및 가액</td><td colspan="3">${v(data,'quantity')}</td></tr>
+  <tr><td class="label-cell-wide">구체적 최종용도</td><td colspan="3" style="white-space:pre-wrap">${v(data,'endUse')}</td></tr>
+  <tr><th colspan="4" style="background:#e8e8e8">서약자 (최종사용자)</th></tr>
+  <tr><td class="label-cell-wide">회사명</td><td>${v(data,'endUserCompany')}</td><td class="label-cell">대표자명</td><td>${v(data,'endUserRep')}</td></tr>
+  <tr><td class="label-cell-wide">주소 (설치장소)</td><td colspan="3">${v(data,'endUserAddress')}</td></tr>
+</table>
+<div class="signature-area">
+  <p style="font-size:9pt;text-align:left">본인은 위 물품의 최종사용자로서 동 물품이 대한민국의 수출통제 관련 법령에 의하여 통제됨을 인지하며, 동 물품을 신고된 용도 이외로 사용하지 않으며 귀국 정부의 허가 없이 제3자에게 양도하거나 재수출하지 않을 것임을 서약합니다.</p>
+  <p style="margin-top:15px">20${v(data,'signYear', '  ')}년 ${v(data,'signMonth', '  ')}월 ${v(data,'signDay', '  ')}일</p>
+  <p style="margin-top:10px">서명(Signature): _________________</p>
+</div>
+</body></html>`;
+}
+
+function tmpl_01_05(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>사실 확인서 (상황허가용)</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-title" style="margin-top:40px;">사 실 확 인 서</div>
+<div style="margin: 40px 0; font-size:11pt; line-height: 1.8;">
+  <p><strong>수신:</strong> 산업통상자원부장관 귀하</p>
+  <p><strong>제출일자:</strong> ${v(data,'submitDate')}</p>
+  <p><strong>제출업체:</strong> ${v(data,'companyName')}</p>
+  <p><strong>대표자:</strong> ${v(data,'ceoName')}</p>
+  <br>
+  <p><strong>[확인 대상 제출 서류]</strong></p>
+  <div style="background:#f9f9f9; padding: 10px; border: 1px solid #ccc; white-space:pre-wrap; margin-bottom: 20px;">${v(data,'targetDocs')}</div>
+  <p style="white-space:pre-wrap;">${v(data,'confirmStatement')}</p>
+</div>
+<div class="signature-area" style="margin-top: 60px;">
+  <p>상기 사실을 확인합니다.</p>
+  <p style="margin-top:30px">대표자: ${v(data,'ceoName')} (직인/서명)</p>
+</div>
+</body></html>`;
+}
+
+function tmpl_01_06(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>회사 소개자료</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">제20조 제8호 양식무 - 상황허가 부속서류</div>
+<div class="byeolji-title">회사 소개자료<br><span style="font-size:11pt">(${v(data,'targetCompany')})</span></div>
+<table class="byeolji-table">
+  <tr><th style="width:150px">대상 기업</th><td>${v(data,'targetCompany')}</td></tr>
+  <tr><th>회사 이력<br>(설립, 연혁)</th><td style="white-space:pre-wrap">${v(data,'history')}</td></tr>
+  <tr><th>사업 내용</th><td style="white-space:pre-wrap">${v(data,'businessScope')}</td></tr>
+  <tr><th>매출/임직원</th><td>${v(data,'revenue')}</td></tr>
+  <tr><th>지분구조/소유주</th><td>${v(data,'shares')}</td></tr>
+  <tr><th>주요 고객사</th><td style="white-space:pre-wrap">${v(data,'mainClients')}</td></tr>
+  <tr><th>당사 물품 활용<br>영위 사업</th><td style="white-space:pre-wrap">${v(data,'usageDesc')}</td></tr>
+</table>
+</body></html>`;
+}
+
+function tmpl_01_07(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>수출물품 상세정보</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">제20조 제8호 양식무 - 상황허가 부속서류</div>
+<div class="byeolji-title">수출물품 상세정보</div>
+<table class="byeolji-table">
+  <tr><th style="width:150px">품명 및 모델</th><td>${v(data,'itemName')}</td></tr>
+  <tr><th>사양, 기능, 특성</th><td style="white-space:pre-wrap">${v(data,'specFeatures')}</td></tr>
+  <tr><th>사용목적/방법</th><td style="white-space:pre-wrap">${v(data,'purpose')}</td></tr>
+  <tr><th>설치장소/재고관리</th><td style="white-space:pre-wrap">${v(data,'installLocation')}</td></tr>
+  <tr><th>수량의 적정성</th><td style="white-space:pre-wrap">${v(data,'quantityReason')}</td></tr>
+  <tr><th>기수입 실적</th><td style="white-space:pre-wrap">${v(data,'pastImport')}</td></tr>
+</table>
+</body></html>`;
+}
+
+function tmpl_01_08(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>군용전용 가능성 검토 결과서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">제20조 제8호 양식무 - 상황허가 부속서류</div>
+<div class="byeolji-title">군용전용 가능성 검토 결과서</div>
+<table class="byeolji-table">
+  <tr><th style="width:150px">품명</th><td>${v(data,'itemName')}</td></tr>
+  <tr><th>사양/소재 근거<br>(민수용 확인)</th><td style="white-space:pre-wrap">${v(data,'specAnalysis')}</td></tr>
+  <tr><th>설계 분석</th><td style="white-space:pre-wrap">${v(data,'designAnalysis')}</td></tr>
+  <tr><th>조달 환경 등</th><td style="white-space:pre-wrap">${v(data,'envAnalysis')}</td></tr>
+  <tr><th>결론</th><td style="white-space:pre-wrap; font-weight:bold;">${v(data,'conclusion')}</td></tr>
+</table>
+<div class="signature-area">
+  <p>상기 내용은 당사의 기술적 판단 및 확인을 거쳐 작성된 객관적 사실임을 확인합니다.</p>
+</div>
+</body></html>`;
+}
+
+function tmpl_01_09(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>수출물품 부분제품 설명서</title>${commonStyle}</head><body>${printButton}
+<div class="byeolji-subtitle">제20조 제8호 양식무 - 상황허가 부속서류</div>
+<div class="byeolji-title">수출물품 부분제품 설명서</div>
+<table class="byeolji-table">
+  <tr><th style="width:180px">수출품이 사용되는<br>공정 및 부분</th><td style="white-space:pre-wrap">${v(data,'partUsage')}</td></tr>
+  <tr><th>최종제품 생산라인 설명</th><td style="white-space:pre-wrap">${v(data,'finalProductLine')}</td></tr>
+  <tr><th>최종사용자의 최종제품<br>최근 2년간 생산 실적</th><td style="white-space:pre-wrap">${v(data,'pastProduction')}</td></tr>
+</table>
+</body></html>`;
+}
+
+// ─── 공개 API ───
+export 
+
+// ─── C-00: 자율준수체제 운영 및 교육 평가 계획서 (텍스트 기반) ───
+function tmpl_C_00(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>${v(data,'planYear')} 자율준수체제(CP) 운영 및 교육 평가 계획</title>${commonStyle}
+  <style>
+    .plan-title { text-align: center; font-size: 24pt; font-weight: 800; margin: 40px 0; color: #1e3a8a; letter-spacing: -1px; }
+    .plan-section { font-size: 14pt; font-weight: 700; margin: 30px 0 15px; border-bottom: 2px solid #1e3a8a; padding-bottom: 5px; color: #1e3a8a; }
+    .plan-info { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    .plan-info-item { display: flex; margin-bottom: 10px; font-size: 11pt; }
+    .plan-info-label { font-weight: 700; width: 180px; color: #475569; }
+    .plan-info-value { flex: 1; color: #0f172a; white-space: pre-wrap; line-height: 1.6; }
+    .content-box { border: 1px solid #cbd5e1; padding: 20px; margin-bottom: 20px; border-radius: 8px; white-space: pre-wrap; line-height: 1.6; font-size: 11pt; color: #1e293b; background: white; }
+  </style>
+  </head><body>${printButton}
+  
+  <div class="plan-title">${v(data,'planYear')} 자율준수체제(CP) 사내교육 계획</div>
+  
+  <div class="plan-info">
+    <div class="plan-info-item"><div class="plan-info-label">▢ 작성자 / 부서</div><div class="plan-info-value">${v(data,'drafter')}</div></div>
+    <div class="plan-info-item"><div class="plan-info-label">▢ 계획 수립일자</div><div class="plan-info-value">${v(data,'planDate')}</div></div>
+  </div>
+
+  <div class="plan-section">Ⅰ. 교육 개요</div>
+  <div class="plan-info" style="background: white;">
+    <div class="plan-info-item"><div class="plan-info-label">○ 대상 부서 및 인원</div><div class="plan-info-value">${v(data,'targetAudience')}</div></div>
+    <div class="plan-info-item"><div class="plan-info-label">○ 주기 및 일정</div><div class="plan-info-value">${v(data,'trainingCycle')}</div></div>
+    <div class="plan-info-item"><div class="plan-info-label">○ 시행 방법</div><div class="plan-info-value">${v(data,'trainingMethods')}</div></div>
+  </div>
+
+  <div class="plan-section">Ⅱ. 교육 목표</div>
+  <div class="content-box">${v(data,'trainingGoals')}</div>
+
+  <div class="plan-section">Ⅲ. 주요 교육 내용 (커리큘럼)</div>
+  <div class="content-box" style="border-left: 4px solid #1e3a8a;">${v(data,'curriculum')}</div>
+
+  <div class="plan-section">Ⅳ. 교육 결과 관리 및 환류</div>
+  <div class="content-box" style="background: #f8fafc;">${v(data,'resultManagement')}</div>
+  
+  </body></html>`;
+}
+
+// ─── C-07: 연간 자율준수 내부 감사 계획서 (텍스트 기반) ───
+function tmpl_C_07(data) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>${v(data,'auditYear')} 연간 자율준수 내부 감사 계획</title>${commonStyle}
+  <style>
+    .plan-title { text-align: center; font-size: 24pt; font-weight: 800; margin: 40px 0; color: #0f172a; border-bottom: 4px double #0f172a; padding-bottom: 20px; }
+    .plan-section { font-size: 15pt; font-weight: 700; margin: 40px 0 15px; color: #0f172a; border-left: 5px solid #0f172a; padding-left: 10px; }
+    .plan-info { display: flex; flex-direction: column; gap: 10px; font-size: 11pt; margin-bottom: 30px; }
+    .plan-info-item { display: flex; }
+    .plan-info-label { width: 160px; font-weight: 700; color: #334155; }
+    .plan-info-value { flex: 1; color: #0f172a; white-space: pre-wrap; line-height: 1.6; }
+    .content-box { border: 1px solid #cbd5e1; padding: 20px; margin-bottom: 20px; white-space: pre-wrap; line-height: 1.7; font-size: 11pt; color: #1e293b; }
+    .highlight-box { background: #f8fafc; border-top: 2px solid #0f172a; padding: 20px; margin-bottom: 20px; white-space: pre-wrap; line-height: 1.7; font-size: 11pt; color: #1e293b; }
+  </style>
+  </head><body>${printButton}
+  
+  <div class="plan-title">${v(data,'auditYear')} 자율준수 내부 감사 계획</div>
+  
+  <div class="plan-info">
+    <div class="plan-info-item"><div class="plan-info-label">감사 실시자</div><div class="plan-info-value">${v(data,'auditor')}</div></div>
+    <div class="plan-info-item"><div class="plan-info-label">계획 수립일자</div><div class="plan-info-value">${v(data,'planDate')}</div></div>
+    <div class="plan-info-item"><div class="plan-info-label">감사 예정 기간</div><div class="plan-info-value">${v(data,'auditPeriod')}</div></div>
+  </div>
+
+  <div class="plan-section">Ⅰ. 감사 대상 및 범위</div>
+  <div class="content-box">${v(data,'auditScope')}</div>
+
+  <div class="plan-section">Ⅱ. 중점 감사 점검 항목</div>
+  <div class="highlight-box">${v(data,'auditItems')}</div>
+
+  <div class="plan-section">Ⅲ. 감사 수행 방법</div>
+  <div class="content-box">${v(data,'auditMethod')}</div>
+
+  <div class="plan-section">Ⅳ. 감사 결과 보고 및 사후관리</div>
+  <div class="content-box" style="background:#f1f5f9; border:none;">${v(data,'reportingPlan')}</div>
+  
+  </body></html>`;
+  return html;
+}
+// ─── A-01: 자율수출관리규정 제정 기안문 ───
+function tmpl_A_01(data) {
+  let html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>A-01 자율수출관리규정 제정 기안문</title>${commonStyle}
+<style>
+  .draft-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .draft-title { font-size: 26pt; font-weight: bold; letter-spacing: 5px; font-family: "Gungsuh", serif; text-align: center; width: 100%; margin-bottom: 30px;}
+  .approval-table { border-collapse: collapse; text-align: center; font-size:10pt;}
+  .approval-table th, .approval-table td { border: 1px solid #333; padding: 5px; }
+  .approval-table th { background: #f0f0f0; width: 80px; font-weight: 500; }
+  .approval-table td { height: 60px; vertical-align: middle; }
+  .draft-meta { width: 100%; border-collapse: collapse; margin-bottom: 20px; border-top: 2px solid #333; border-bottom: 2px solid #333; font-size: 11pt;}
+  .draft-meta th, .draft-meta td { padding: 10px; border-bottom: 1px solid #ccc; text-align: left; }
+  .draft-meta th { width: 120px; background: #f9f9f9; font-weight: 600; border-right: 1px solid #ccc; text-align: center;}
+  .draft-body { padding: 20px 10px; min-height: 200px; white-space: pre-wrap; font-size: 12pt; line-height: 1.8; }
+  .revision-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+  .revision-table th, .revision-table td { border: 1px solid #333; padding: 10px; text-align: left; vertical-align: top; font-size: 10pt; }
+  .revision-table th { background: #f0f0f0; text-align: center; font-weight: 600; }
+  .top-meta { width:100%; display:flex; justify-content: space-between; align-items:flex-end; margin-bottom:10px; }
+</style>
+</head><body>${printButton}
+
+<div class="top-meta">
+  <div>
+    <table style="border-collapse:collapse; font-size:10pt; margin-bottom:10px;">
+      <tr><td style="width:70px; font-weight:bold;">문서번호</td><td>: ${v(data, 'docNumber')}</td></tr>
+      <tr><td style="font-weight:bold;">보존기간</td><td>: ${v(data, 'retentionPeriod')}</td></tr>
+      <tr><td style="font-weight:bold;">결재일자</td><td>: ${v(data, 'approveDate')}</td></tr>
+      <tr><td style="font-weight:bold;">공개여부</td><td>: ${v(data, 'disclosure')}</td></tr>
+    </table>
+  </div>
+  <table class="approval-table">
+    <tr>
+      <th rowspan="2" style="width:30px; writing-mode:vertical-rl; text-orientation:upright; letter-spacing:2px; background:#e2e8f0;">결재</th>
+      <th>기 안</th>
+      <th>검 토</th>
+      <th>승 인</th>
+    </tr>
+    <tr>
+      <td>${v(data, 'drafter')}</td>
+      <td>${v(data, 'reviewer')}</td>
+      <td>${v(data, 'approver')}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="draft-title">기 안 문</div>
+
+<table class="draft-meta">
+  <tr>
+    <th>기안일자</th>
+    <td>${v(data, 'draftDate')}</td>
+    <th>시행일자</th>
+    <td>${v(data, 'effectiveDate')}</td>
+  </tr>
+  <tr>
+    <th>제 목</th>
+    <td colspan="3" style="font-weight:bold; font-size:13pt;">${v(data, 'subject')}</td>
+  </tr>
+</table>
+
+<div class="draft-body">${v(data, 'body')}</div>
+`;
+
+  if (data.noRevision) {
+    html += `<div style="margin-top:20px; padding:15px; background:#f8fafc; border-left:4px solid #3b82f6; font-weight:bold; font-size:11pt; text-align:center;">
+      ✅ 정기 검토 결과, 관련 법령 개정 및 사내 규정 변경 사유가 발생하지 않아 개정 없이 현행 규정을 유지함
+    </div>`;
+  } else if (data.tables && data.tables.revisionTable && data.tables.revisionTable.length > 0) {
+    html += `<h3 style="margin-top:40px; font-size:13pt; margin-bottom:10px;">[붙임] 신·구조문 대비표</h3>
+    <table class="revision-table">
+      <thead>
+        <tr>
+          <th style="width:40%">현 행</th>
+          <th style="width:40%">개 정 (안)</th>
+          <th style="width:20%">비 고</th>
+        </tr>
+      </thead>
+      <tbody>`;
+    data.tables.revisionTable.forEach(row => {
+      html += `<tr>
+        <td style="white-space:pre-wrap;">${row.before || ''}</td>
+        <td style="white-space:pre-wrap;">${row.after || ''}</td>
+        <td>${row.reason || ''}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+
+  html += `</body></html>`;
+  return html;
+}
+
+function tmpl_G_05(data) {
+  return `
+    <div class="hwp-doc">
+      <div class="hwp-header">
+        <h1>기 안 문</h1>
+        <table class="hwp-table" style="width: 100%; margin-top: 20px;">
+          <colgroup>
+            <col style="width: 15%;">
+            <col style="width: 35%;">
+            <col style="width: 15%;">
+            <col style="width: 35%;">
+          </colgroup>
+          <tbody>
+            <tr>
+              <th>문서번호</th>
+              <td>${data.documentNo || ''}</td>
+              <th>기안일자</th>
+              <td>${data.draftDate || ''}</td>
+            </tr>
+            <tr>
+              <th>기안자</th>
+              <td>${data.drafter || ''}</td>
+              <th>결재자</th>
+              <td>대표이사</td>
+            </tr>
+            <tr>
+              <th>제 목</th>
+              <td colspan="3" style="font-weight:bold;">${data.subject || ''}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hwp-content" style="margin-top: 30px;">
+        <p style="margin-bottom: 20px; line-height:1.6;">
+          자율준수무역거래자 등급 유지 및 최고경영자 보고 의무 이행을 위하여, 당사의 전년도 자율준수체제(CP) 운영 및 실적 현황과 당해연도 운영 계획을 아래와 같이 통합 보고하오니 재가하여 주시기 바랍니다.
+        </p>
+        
+        <h3>- 아 래 -</h3>
+        
+        <div style="margin-top: 20px;">
+          <h4>1. 전년도 자율준수체제 운영 및 실적 현황 요약</h4>
+          <div style="padding: 15px; border: 1px solid var(--border-color); background: #f9f9f9; min-height: 150px; white-space: pre-wrap;">${data.prevYearReport || '전년도 실적 내용이 없습니다.'}</div>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <h4>2. 당해연도 자율준수체제 운영 계획 (교육/감사 등)</h4>
+          <div style="padding: 15px; border: 1px solid var(--border-color); background: #f9f9f9; min-height: 150px; white-space: pre-wrap;">${data.currentYearPlan || '당해연도 운영 계획이 없습니다.'}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+const formTemplateMap = {
+  'A-01': tmpl_A_01,
+  'C-00': tmpl_C_00,
+  'C-07': tmpl_C_07,
+  'G-05': tmpl_G_05,
+  'L-01': tmpl_01,   // 별지 1호
+  'L-02': tmpl_06,   // 별지 6호
+  'L-03': tmpl_01_03, // 별지 2호
+  'L-04': tmpl_01_04, // 별지 2호의2
+  'L-05': tmpl_01_05, // 사실확인서
+  'L-06': tmpl_01_06, // 회사소개
+  'L-07': tmpl_01_07, // 품목상세
+  'L-08': tmpl_01_08, // 군용불가
+  'L-09': tmpl_01_09, // 부분제품
+  'F-02': tmpl_04,   // 별지 4호
+  'F-01': tmpl_05,   // 별지 5호
+  'E-05': tmpl_13,   // 별지 13호
+  'E-03': tmpl_15,   // 별지 15호
+  'K-01': tmpl_16,   // 별지 16호 (사전거래보고서)
+  'K-02': tmpl_16_2, // 별지 16의2호 (사후거래보고서)
+  'K-03': tmpl_18,   // 별지 18호 (운영보고서)
+  'K-04': tmpl_19,   // 별지 19호 (실적보고서)
+  'J-01': tmpl_24,   // 별지 24호
+  'J-02': tmpl_25,   // 별지 25호
+};
+
+export function hasFormTemplate(formId) {
+  return !!formTemplateMap[formId];
+}
+
+export function generateFormHtml(formId, data) {
+  const tmplFn = formTemplateMap[formId];
+  if (!tmplFn) return null;
+  return tmplFn(data);
+}

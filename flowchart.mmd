@@ -1,0 +1,57 @@
+flowchart TD
+    Start((시작)) --> Z01[Z-01 가상 시뮬레이터]
+    Z01 --> F04[F-04 판정대장 작성]
+    F04 --> G01[G-01 거래심사표 작성]
+    G01 --> EccnCheck{ECCN 판정 결과}
+
+    EccnCheck -->|EAR99 / NON_CONTROLLED| EAR99Check
+    EccnCheck -->|5D002 / ML21| StrategicCheck
+
+    %% 전략물자 로직
+    StrategicCheck{위험/의심 여부} -->|우려거래자 일치 OR Red Flags| L01_Strategic[L-01 개별수출허가 강제]
+    StrategicCheck -->|안전| GroupACheck{가 지역 AND CP AA등급?}
+    GroupACheck -->|Yes| SanctionCheck{제재국 여부?}
+    SanctionCheck -->|Yes| L01_Strategic
+    SanctionCheck -->|No| L02[L-02 포괄수출허가 신청]
+    GroupACheck -->|No| L01_Strategic
+
+    %% 상황허가(비전략물자) 로직
+    EAR99Check{위험/의심 여부} -->|우려거래자 일치 OR Red Flags| L03[L-03 상황허가 패키지 발동]
+    EAR99Check -->|안전| Exemption[정부 허가 면제]
+
+    %% 상황허가 패키지 상세
+    L03 --> L05_08(L-05~L-08 첨부 패키지 동시 활성화)
+    L03 --> ITTCheck{무형이전 여부}
+    ITTCheck -->|Yes| L04(L-04 무형이전 부속서류 추가)
+    ITTCheck -->|No| CompCheck{부분제품 여부}
+    CompCheck -->|Yes| L09(L-09 부분제품 설명서 추가)
+    CompCheck -->|No| Merge1
+
+    L04 --> Merge1
+    L09 --> Merge1
+    L05_08 --> Merge1
+
+    L01_Strategic --> Merge1
+    L02 --> Merge1
+    Exemption --> Merge1
+
+    Merge1 --> H01[H-01 출하전 점검표 작성]
+    
+    %% 긴급 정지 / 무단 배포
+    H01 -.-> |출하 보류/긴급 정지 발동| G04[G-04 Stop-Shipment Report]
+    H01 -.-> |사전 무단 배포 사고| J01_02[J-01 자진신고 및 J-02 재발방지계획]
+
+    H01 --> I01[I-01 사후관리 대장 기록]
+    
+    %% K-01/02 분기
+    I01 --> ExemptCheck{허가 면제 건?}
+    ExemptCheck -->|Yes| RussiaCheck{러시아/벨라루스?}
+    RussiaCheck -->|Yes| K01[K-01 사전거래보고서 필수]
+    RussiaCheck -->|No| K02[K-02 사후거래보고서]
+    ExemptCheck -->|No| K03_04[K-03/K-04 연간 정기보고 대기]
+
+    K01 --> Finish
+    K02 --> Finish
+    K03_04 --> Finish((종료))
+    J01_02 --> Finish
+    G04 --> Finish
