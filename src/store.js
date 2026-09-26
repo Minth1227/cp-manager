@@ -1,7 +1,8 @@
 import { db, auth } from './firebase.js';
-import { doc, getDoc, setDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, writeBatch, runTransaction } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { customAlert } from './utils/dialog.js';
+import { authFetch } from './utils/authFetch.js';
 import { migrateOldTxToNewState, flattenStateToLegacyForms } from './utils/dataAdapter.ts';
 import { getFlatFormSequence } from './data/processFlow.js';
 
@@ -22,9 +23,10 @@ const defaultData = {
     annualRevenue: '',
     website: '',
     cpAppMode: 'initial', // 'initial' (최초 신규 신청) or 'certified' (기 지정/갱신 관리)
-    cpTargetApplyDate: '2026-03-31',
+    cpTargetApplyDate: '', // 지정신청 목표일 (대시보드에서 입력)
     cpCertifiedDate: '',
     cpCertifiedNumber: '',
+    cpCertifiedGrade: '', // 지정서에 기재된 등급 (A/AA/AAA). 비어 있으면 목표 등급(targetGrade)으로 간주하되, 지정번호·지정일이 없으면 특례 미적용
   },
   targetGrade: 'AA',
   applicationType: '유형2',
@@ -276,38 +278,22 @@ export async function setSelectedInstanceId(formId, instanceId) {
   }
 }
 
-// ── 문서번호 발급 (ERB 전자결재 문서번호 체계) ──
-// 형식: {기안자 부서}-{연도}-{일련번호} (예: 수출기획팀-2026-003)
-// 일련번호는 "부서-연도" 조합별로 매년 1부터 다시 시작한다. 부서명이 나중에 바뀌어도
-// 이미 발급된 문서번호는 그대로 보존되고(과거 조합 키는 건드리지 않음), 바뀐 이후에는
-// 새 부서명 기준으로 새 카운트가 시작된다.
-export async function generateDocNumber(department) {
-  const dept = (department || getCurrentUser()?.department || '미지정부서').trim();
+// ── 문서번호 발급 ──
+// 회사 전사 공통 체계 PSR{연도 2자리}-{일련번호} (예: PSR26-124). 서버(slack_interactions)와 같은
+// counters/PSR-{연도} 문서를 트랜잭션으로 증가시켜 번호 중복을 막는다.
+// department 인자는 과거 호출부 호환을 위해 남겨 두지만 번호에는 쓰지 않는다.
+export async function generateDocNumber(department) { // eslint-disable-line no-unused-vars
   const year = new Date().getFullYear();
-  const seqKey = `${dept}-${year}`;
-
-  if (!state.docNumberCounters) state.docNumberCounters = {};
-  const next = (state.docNumberCounters[seqKey] || 0) + 1;
-  state.docNumberCounters[seqKey] = next;
-
-  try {
-    await setDoc(doc(db, 'system', 'globalState'), { docNumberCounters: state.docNumberCounters }, { merge: true });
-  } catch (e) {
-    console.error('[generateDocNumber] 저장 실패:', e);
-  }
-
-  return `${dept}-${year}-${String(next).padStart(3, '0')}`;
+  const ref = doc(db, 'counters', `PSR-${year}`);
+  const next = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    const n = (snap.exists() ? Number(snap.data().last || 0) : 0) + 1;
+    tx.set(ref, { last: n, updatedAt: new Date().toISOString() }, { merge: true });
+    return n;
+  });
+  return `PSR${String(year).slice(-2)}-${String(next).padStart(3, '0')}`;
 }
 
-// 새 회차(예: 이번 교육, 또는 재작성된 새 문서)를 만들고 즉시 선택 상태로 만든다.
-// isInstanceForm 대상은 전부 "대장(표)이 아닌 실제 문서 한 건"이므로, 회차를 새로 만들 때마다
-// 문서번호를 새로 발급한다(재작성이든 신규 작성이든 동일 — initialData에 이전 문서번호가
-// 남아있어도 여기서 항상 덮어써서 새 번호를 받게 한다).
-// [수정] 문서번호는 "작성 시점"이 아니라 "승인 완료 시점"에만 발급한다 — 미착수/작성중/
-// 대기중/반려 상태의 문서는 문서번호를 받지 않고, 각 서식 자신의 회차 목록에서만 보인다.
-// (발급은 setFormData/slack_interactions.js의 승인 처리 로직에서 이뤄진다.)
-// 대신 나중에(승인 시점에) "기안자 부서" 기준으로 번호를 매길 수 있도록, 기안자의 부서를
-// 생성 시점에 함께 기록해둔다.
 export async function createFormInstance(formId, initialData = {}) {
   if (!canEdit()) return null;
   const instanceId = `inst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -830,7 +816,7 @@ export async function uploadLegalPdf(formId, file) {
     reader.readAsDataURL(file);
   });
   const user = getCurrentUser();
-  const res = await fetch('/.netlify/functions/legal_pdf_upload', {
+  const res = await authFetch('/.netlify/functions/legal_pdf_upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ formId, filename: file.name, pdfBase64: base64, uploadedBy: user?.name || user?.email || 'unknown' }),
@@ -843,7 +829,7 @@ export async function uploadLegalPdf(formId, file) {
 
 export async function deleteLegalPdf(formId) {
   if (!canEdit()) return { error: '편집 권한이 없습니다.' };
-  const res = await fetch('/.netlify/functions/legal_pdf_delete', {
+  const res = await authFetch('/.netlify/functions/legal_pdf_delete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ formId }),

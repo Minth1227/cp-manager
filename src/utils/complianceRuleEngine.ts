@@ -1,3 +1,7 @@
+import {
+  regionOf, isAnnex23Country, Region, FORM_LABELS, LEGAL_REFERENCE,
+} from './legalBasis';
+
 export interface PartyInfo {
   name: string;
   address: string;
@@ -25,22 +29,25 @@ export interface ExportCaseState {
   requestedBy?: string;          // 영업 담당자 ID
   screeningCompletedAt?: string; // CP 담당자 스크리닝 완료 시각
   screeningCompletedBy?: string; // CP 담당자 ID
-  
+
   parties: {
     buyer: PartyInfo;
     ultimateConsignee: PartyInfo;
     endUser: PartyInfo;
     agent: PartyInfo;
   };
-  
+
   screening: {
-    cslApiHit: boolean;
-    yesTradeManualChecked: boolean;
+    cslApiHit: boolean;              // (참고용) 미국 CSL 조회 결과 — 한국 우려거래자 확인을 대체하지 않음
+    yesTradeManualChecked: boolean;  // YESTRADE 우려거래자 조회 완료 여부 (필수)
+    yesTradeCheckedAt?: string;      // 조회 일시 (체크 시 자동 기록)
     hasRedFlags: boolean;
-    selectedRedFlags: string[]; // List of IDs from 12 WMD Red Flags
+    selectedRedFlags: string[];
     stopShipmentChoice?: 'CANCEL' | 'DUE_DILIGENCE' | 'CATCH_ALL' | 'REPORT';
     isCatchAllApproved?: boolean;
+    catchAllLicenseNo?: string;      // 상황허가 허가번호 (입력해야 해제 가능)
     isDueDiligenceApproved?: boolean;
+    dueDiligenceNote?: string;       // 소명 검토 의견 (입력해야 해제 가능)
     dueDiligenceFiles?: string[];
   };
 
@@ -50,24 +57,24 @@ export interface ExportCaseState {
     productName?: string;
     classificationDate?: string;
     kostiNumber?: string;
-    // [#8] 전문판정 진행 상태 추적
     kostiSubmittedAt?: string;
     kostiStatus?: 'SUBMITTED' | 'IN_REVIEW' | 'COMPLETED' | 'REJECTED';
     hskCode: string;
-    q1_cryptoOverLimit: boolean; // AES >56bit, RSA >512bit, ECC >112bit, PQC
-    q2_nonCryptoOnly: boolean;   // Authentication, Digital Signature, SecOC MAC only
-    q3_oamOnly: boolean;         // Operations, Admin, Maintenance only
-    q4_usCodeCommingled: boolean; // US origin code > 0%
+    q1_cryptoOverLimit: boolean;
+    q2_nonCryptoOnly: boolean;
+    q3_oamOnly: boolean;
+    q4_usCodeCommingled: boolean;     // 미국산 암호 코드 포함 → 미국 EAR 별도 검토 필요 (한국 판정과 별개)
+    // 내부 코드값. 'EAR99'는 과거 데이터 호환용 값이며 화면에는 "비해당"으로 표시한다.
     computedEccn?: '5D002' | 'EAR99' | 'ML21' | 'NON_CONTROLLED';
-    isUsEarSubject?: boolean;     // De minimis 0% Rule applied
-    // [#9] ML21 군용 판정 시 방위사업청 별도 신고 필요
+    isUsEarSubject?: boolean;         // 미국 EAR 별도 검토 필요 플래그
     isMilitary?: boolean;
   };
 
   destination: {
     countryCode: string;
-    isGroupA: boolean;            // Wassenaar 30 Group A countries
-    isSanctionedCountry: boolean; // Russia, Belarus, Iran, Syria, North Korea 등
+    region?: Region;              // [별표 6] 가 / 나의1 / 나의2
+    isGroupA: boolean;            // region === 'A'
+    isSanctionedCountry: boolean; // region === 'B2' (나의2 지역). 과거 필드명 유지
   };
 
   documents: Record<string, DocumentState>;
@@ -75,21 +82,34 @@ export interface ExportCaseState {
   transaction: {
     isITT: boolean;
     isComponent: boolean;
+    // 실제 지정 등급 기준으로 화면에서 매번 다시 계산된다 (저장값을 신뢰하지 않음)
     isCP_AA: boolean;
     isLicenseExempt: boolean;
     isRussiaBelarus: boolean;
     isPreReportChosen: boolean;
     isPostReportChosen: boolean;
     isImport: boolean;
+    // 고시 제20조②: 기술(설계·제조·사용 기술자료, 기술지원 등)을 수출하는 경우
+    isTechnologyTransfer?: boolean;
+    // 고시 제26조①9호 요건 입력
+    cryptoCivilPurpose?: boolean;     // 민간기업 내부시스템 구축·운영 또는 민수용 제품 개발·생산 용도
+    endUserHqCountry?: string;        // 최종사용자(민간) 본사 소재국
+    hasComprehensiveLicense?: boolean; // 유효한 포괄수출허가 보유 (허가번호로 확인)
+    comprehensiveLicenseNo?: string;
     plannedExportDate?: string;
     exportAmountUSD?: string;
     exportQuantity?: string;
     contractNo?: string;
   };
-  
+
+  releaseChecklist?: {
+    documentsMatch?: boolean;     // 판정서·허가서·계약서·송장의 품목·수량·목적지 일치
+    transferControlled?: boolean; // 승인된 전달 경로·접근기간으로 전달
+  };
+
   g02Register?: any[];
   g04Register?: any[];
-  
+
   attachments?: {
     [formIdOrCategory: string]: Array<{
       filename: string;
@@ -104,61 +124,44 @@ export interface DocumentConfig {
   name: string;
   enabled: boolean;
   disabledReason?: string;
+  note?: string;       // 활성 서류에 붙는 확인 필요·근거 안내
   package?: string;
 }
 
 // ============================================================
-// [별표 23] 암호화품목 허가면제 특례국 (전략물자수출입고시)
-// 이 국가들로의 5D002 수출은 개별수출허가(L-01) 면제
+// 목적지 판정 — [별표 6] (legalBasis.ts 단일 원천 사용)
 // ============================================================
-export const ANNEX23_CRYPTO_EXEMPT_COUNTRIES = new Set([
-  '미국', '영국', '독일', '프랑스', '일본', '호주', '캐나다', '네덜란드',
-  '이탈리아', '스페인', '벨기에', '스웨덴', '덴마크', '노르웨이', '핀란드',
-  '오스트리아', '스위스', '뉴질랜드', '싱가포르', '체코', '헝가리', '폴란드',
-  '포르투갈', '그리스', '아일랜드', '룩셈부르크', '불가리아', '몰타', '우크라이나',
-  'US', 'GB', 'DE', 'FR', 'JP', 'AU', 'CA', 'NL', 'IT', 'ES', 'BE', 'SE',
-  'DK', 'NO', 'FI', 'AT', 'CH', 'NZ', 'SG', 'CZ', 'HU', 'PL', 'PT', 'GR',
-  'IE', 'LU', 'BG', 'MT', 'UA', 'KR'
-]);
-
-// ============================================================
-// 별표 6 기반 국가코드 자동 지역 분류 헬퍼
-// countryList.ts와 연동하여 더 완전한 리스트로 교체 권장
-// ============================================================
-const GROUP_A_COUNTRY_CODES = new Set([
-  'US', 'GB', 'DE', 'FR', 'JP', 'AU', 'CA', 'NL', 'IT', 'ES', 'AT', 'BE',
-  'CZ', 'DK', 'FI', 'GR', 'HU', 'IE', 'LU', 'NO', 'NZ', 'PL', 'PT', 'KR',
-  'SE', 'CH', 'TR', 'UA', 'BG', 'MT',
-  '미국', '영국', '독일', '프랑스', '일본', '호주', '캐나다', '네덜란드',
-  '이탈리아', '스페인', '오스트리아', '벨기에', '체코', '덴마크', '핀란드',
-  '그리스', '헝가리', '아일랜드', '룩셈부르크', '노르웨이', '뉴질랜드',
-  '폴란드', '포르투갈', '한국', '스웨덴', '스위스', '터키', '우크라이나',
-  '불가리아', '몰타'
-]);
-
-const SANCTIONED_COUNTRY_CODES = new Set([
-  'KP', 'IR', 'SY', 'RU', 'BY', 'CU',
-  '북한', '이란', '시리아', '러시아', '벨라루스', '쿠바'
-]);
-
 export function resolveDestination(countryCode: string): ExportCaseState['destination'] {
+  const region = regionOf(countryCode);
   return {
     countryCode,
-    isGroupA: GROUP_A_COUNTRY_CODES.has(countryCode),
-    isSanctionedCountry: SANCTIONED_COUNTRY_CODES.has(countryCode),
+    region,
+    isGroupA: region === 'A',
+    isSanctionedCountry: region === 'B2',
   };
 }
 
-// K-01/K-02 법정 보고 기한 계산 (대외무역법 시행령 제53조)
+export function isStrategicItem(eccn?: string): boolean {
+  return eccn === '5D002' || eccn === 'ML21';
+}
+
+export function eccnLabel(eccn?: string): string {
+  if (eccn === '5D002') return '5D002 (전략물자 해당)';
+  if (eccn === 'ML21') return 'ML21 (군용물자 해당)';
+  return '비해당';
+}
+
+// 사전·사후거래보고 기한 — 고시 제26조①: 수출 전 사전거래보고서 또는 수출 후 3개월 이내 사후거래보고서
 export function getReportDeadlines(plannedExportDate: string) {
   const exportDate = new Date(plannedExportDate);
-  const PRE_REPORT_DAYS = 30;
-  const POST_REPORT_DAYS = 30;
+  const post = new Date(exportDate);
+  post.setMonth(post.getMonth() + 3);
+  const iso = (d: Date) => d.toISOString().split('T')[0];
   return {
-    preReportDeadline: new Date(exportDate.getTime() - PRE_REPORT_DAYS * 86400000).toISOString().split('T')[0],
-    postReportDeadline: new Date(exportDate.getTime() + POST_REPORT_DAYS * 86400000).toISOString().split('T')[0],
-    isPreReportOverdue: new Date() > new Date(exportDate.getTime() - PRE_REPORT_DAYS * 86400000),
-    isPostReportOverdue: new Date() > new Date(exportDate.getTime() + POST_REPORT_DAYS * 86400000),
+    preReportDeadline: iso(exportDate), // 이 날짜(수출일) 전까지 제출
+    postReportDeadline: iso(post),
+    isPreReportOverdue: new Date() >= exportDate,
+    isPostReportOverdue: new Date() > post,
   };
 }
 
@@ -166,12 +169,10 @@ export function getReportDeadlines(plannedExportDate: string) {
 export function validateAndLoadDraft(raw: string, txId: string, initialState: ExportCaseState): ExportCaseState {
   try {
     const parsed: ExportCaseState = JSON.parse(raw);
-    // 1. ID 무결성 체크
     if (parsed.id !== txId) {
       console.warn('[Security] Draft ID mismatch. Resetting to initial state.');
       return { ...initialState, id: txId };
     }
-    // 2. status는 Rule Engine으로 항상 재계산 (LocalStorage 조작 무력화)
     const { isBlocked } = evaluateScreeningStatus(parsed.screening, parsed.destination);
     if (isBlocked) {
       parsed.status = 'STOP_SHIPMENT';
@@ -185,186 +186,194 @@ export function validateAndLoadDraft(raw: string, txId: string, initialState: Ex
   }
 }
 
+// 사내 1차 판단 보조 로직. 최종 판정은 자가판정서(별지 제5호) 또는 전문판정으로 한다.
 export function computeEccn(classification: ExportCaseState['classification']) {
   let eccn: '5D002' | 'EAR99' | 'ML21' | 'NON_CONTROLLED' = 'EAR99';
-  
   if (classification.q1_cryptoOverLimit && !classification.q2_nonCryptoOnly && !classification.q3_oamOnly) {
     eccn = '5D002';
   }
-  
-  const isUsEarSubject = (classification.q4_usCodeCommingled && eccn === '5D002');
-  
-  return {
-    computedEccn: eccn,
-    isUsEarSubject: isUsEarSubject
-  };
+  // 한국 판정과 무관하게, 미국산 암호 코드가 포함되면 미국 EAR 재수출 규정 검토가 별도로 필요하다.
+  const isUsEarSubject = !!classification.q4_usCodeCommingled;
+  return { computedEccn: eccn, isUsEarSubject };
 }
 
+/**
+ * 스크리닝 상태
+ * - isIncomplete: YESTRADE 우려거래자 조회가 끝나지 않음 → 다음 단계·출하 불가 (매 거래 필수, [별표 20] 3.2.4.1)
+ * - isBlocked:    위험 신호(우려거래자 일치·의심징후·나의2 지역)가 있고 해소 조치가 없음 → STOP-SHIPMENT
+ */
 export function evaluateScreeningStatus(
   screening: ExportCaseState['screening'],
   destination?: Pick<ExportCaseState['destination'], 'isSanctionedCountry'>
 ) {
-  // [#1] 스크리닝을 아직 시작하지 않은 케이스(초기 상태)는 블록하지 않음
   const screeningStarted =
     screening.cslApiHit ||
     screening.yesTradeManualChecked ||
     screening.selectedRedFlags.length > 0;
 
-  // [#5] 우려거래자 API 일치 | WMD 의심징후 | 제재국 수출
   const hasRisk =
     screening.cslApiHit ||
     screening.hasRedFlags ||
     (destination?.isSanctionedCountry ?? false);
 
-  // YesTrade 수동 조회를 시작했으나 체크하지 않은 경우만 블록
-  const yesTradeNotChecked = screeningStarted && !screening.yesTradeManualChecked;
+  const catchAllResolved = !!screening.isCatchAllApproved && !!(screening.catchAllLicenseNo || '').trim();
+  const dueDiligenceResolved = !!screening.isDueDiligenceApproved && !!(screening.dueDiligenceNote || '').trim();
 
-  const isBlocked =
-    (hasRisk || yesTradeNotChecked) &&
-    !screening.isCatchAllApproved &&
-    !screening.isDueDiligenceApproved;
+  const isBlocked = hasRisk && !catchAllResolved && !dueDiligenceResolved;
+  const isIncomplete = !screening.yesTradeManualChecked;
 
-  return { isBlocked, screeningStarted, hasRisk };
+  return { isBlocked, isIncomplete, screeningStarted, hasRisk };
 }
 
+/**
+ * 출하(배포) 승인 가능 여부. 화면의 모든 승인 버튼이 이 함수를 거친다.
+ */
+export function canRelease(state: ExportCaseState): { ok: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+  const { isBlocked, isIncomplete } = evaluateScreeningStatus(state.screening, state.destination);
+  if (isIncomplete) reasons.push('YESTRADE 우려거래자 조회가 완료되지 않았습니다.');
+  if (isBlocked) reasons.push('STOP-SHIPMENT 상태입니다. 1단계에서 해소 경로를 처리하십시오.');
+  if (state.classification.classificationType === 'NONE') reasons.push('전략물자 판정(자가판정 또는 전문판정)이 등록되지 않았습니다.');
+  if (!state.releaseChecklist?.documentsMatch) reasons.push('출하 전 서류 일치 확인이 체크되지 않았습니다.');
+  if (!state.releaseChecklist?.transferControlled) reasons.push('전달 경로 통제 확인이 체크되지 않았습니다.');
+  if (state.salesManagerId && state.salesManagerId === state.complianceManagerId && !(state.adminOverrideReason || '').trim()) {
+    reasons.push('기안자와 승인자가 같습니다. 예외 사유를 기재해야 합니다 (고시 제74조② 영업부문 독립).');
+  }
+  if (state.status === 'REVOKED') reasons.push('취소(REVOKED)된 거래입니다.');
+  return { ok: reasons.length === 0, reasons };
+}
+
+/**
+ * 거래별 필요 서류.
+ * 근거는 LEGAL_REFERENCE.baseNotice 기준 원문 대조 결과이며, 원문으로 확인되지 않은
+ * 면제는 적용하지 않는다(서류를 "필요"로 두고 note로 안내).
+ */
 export function getEnabledDocuments(state: ExportCaseState): DocumentConfig[] {
   const docs: DocumentConfig[] = [];
-  
-  const computedEccn = state.classification.computedEccn || computeEccn(state.classification).computedEccn;
-  const isUsEarSubject = state.classification.isUsEarSubject !== undefined ? state.classification.isUsEarSubject : computeEccn(state.classification).isUsEarSubject;
-  
-  const { hasRedFlags, cslApiHit } = state.screening;
-  const { isGroupA, isSanctionedCountry } = state.destination;
-  const { isBlocked } = evaluateScreeningStatus(state.screening, state.destination);
-  const { isITT, isComponent, isCP_AA, isLicenseExempt, isRussiaBelarus, isPreReportChosen, isPostReportChosen, isImport } = state.transaction;
-  const isRevoked = state.status === 'REVOKED';
 
-  const add = (id: string, name: string, enabled: boolean, disabledReason?: string, pkg?: string) => {
-    docs.push({ id, name, enabled, disabledReason, package: pkg });
+  const computedEccn = state.classification.computedEccn || computeEccn(state.classification).computedEccn;
+  const isUsEarSubject = !!state.classification.q4_usCodeCommingled;
+  const strategic = isStrategicItem(computedEccn);
+
+  const { hasRedFlags, cslApiHit } = state.screening;
+  const region: Region = state.destination.region || regionOf(state.destination.countryCode);
+  const isGroupA = region === 'A';
+  const isB2 = region === 'B2';
+  const { isBlocked } = evaluateScreeningStatus(state.screening, state.destination);
+  const t = state.transaction;
+  const isTech = !!t.isTechnologyTransfer;
+  const isRevoked = state.status === 'REVOKED';
+  const pendingNote = LEGAL_REFERENCE.currentNoticeVerified ? undefined
+    : `현행 ${LEGAL_REFERENCE.currentNotice} 원문 대조 전 — 제출 전 허가기관 안내로 확인`;
+
+  const add = (id: string, name: string, enabled: boolean, disabledReason?: string, pkg?: string, note?: string) => {
+    docs.push({ id, name, enabled, disabledReason: enabled ? undefined : disabledReason, note: enabled ? note : undefined, package: pkg });
   };
 
-  // 1. Z-01
+  // ── 판정 ──
   add('Z-01', '가상 시뮬레이터', true, undefined, '사전심사');
+  add('F-01', FORM_LABELS.selfClassification, true, undefined, '판정',
+    '자가판정일이 허가 신청일 기준 최근 2년 이내여야 함 (고시 제20조①2호)');
+  add('F-02', FORM_LABELS.proClassification, true, undefined, '판정');
+  add('F-03', '기술사양 비교분석서 (사내 서식)', strategic,
+    '사내 1차 판단 결과 비해당입니다. 판정 근거로 기술사양을 보관하려면 자가판정서에 첨부하십시오.', '판정');
+  add('F-04', '판정관리대장', true, undefined, '판정');
 
-  // 2. F-01
-  add('F-01', '별지 4의3호 자가판정서', !isUsEarSubject, isUsEarSubject ? "US EAR 통제 대상 (미국 상무부 허가 필요, 자체 판정 불가)" : undefined, '판정');
-
-  // 3. F-02
-  add('F-02', '별지 4호 전문판정서', true, undefined, '판정'); // 자가판정 불가 또는 수동 선택 시 활성화
-
-  // 4. F-03
-  const f03Enabled = computedEccn === '5D002' || computedEccn === 'ML21';
-  add('F-03', '기술사양 비교분석서', f03Enabled, f03Enabled ? undefined : "비전략물자(EAR99)로 분류되어 기술 성능대비표 작성 대상에서 제외됩니다.", '판정');
-
-  // 5. F-04
-  add('F-04', '판정대장', true, undefined, '판정');
-
-  // 6. G-01
+  // ── 사전심사·출하 ──
   add('G-01', '수출거래 사전심사표', true, undefined, '사전심사');
-
-  // 7. G-04
-  add('G-04', 'Stop-Shipment Report', isBlocked, isBlocked ? undefined : "출하 보류 대상이 아닙니다.", '사전심사');
-
-  // 8. H-01
+  add('G-04', 'Stop-Shipment Report', isBlocked, '출하 보류 대상이 아닙니다.', '사전심사');
   add('H-01', '출하전 점검표', true, undefined, '출하/사후');
-
-  // 9. I-01
   add('I-01', '사후관리 대장', true, undefined, '출하/사후');
 
-  // 10. L-01
-  // [별표 23] 암호화 특례국으로의 5D002 수출은 개별허가 면제
-  const isCryptoExemptCountry = ANNEX23_CRYPTO_EXEMPT_COUNTRIES.has(state.destination.countryCode);
-  const l01Enabled = computedEccn === '5D002' && (!isGroupA || !isCP_AA) && !isCryptoExemptCountry;
-  const l01Reason = isUsEarSubject ? "US EAR 통제 대상 (미국 상무부 허가 필요)" :
-    isCryptoExemptCountry ? `전략물자수출입고시 별표 23: ${state.destination.countryCode}은 암호화품목 허가면제 특례국입니다.` :
-    "비전략물자이거나 포괄허가(L-02) 적용 건입니다.";
-  add('L-01', '별지 1호 개별수출허가신청서', l01Enabled, l01Enabled ? undefined : l01Reason, '인허가');
+  // ── 미국 EAR (한국 법령과 별개) ──
+  add('US-EAR', '미국 EAR 재수출 검토 메모 (사내)', isUsEarSubject,
+    '미국산 암호 코드 포함으로 표시되지 않았습니다.', '판정',
+    '미국 재수출 규정 적용 여부는 미국 규정·전문가 검토로 판단합니다. 한국 자가판정·허가 절차는 그대로 진행합니다.');
 
-  // 11. L-02
-  const l02Enabled = computedEccn === '5D002' && isGroupA && isCP_AA && !isSanctionedCountry;
-  const l02Reason = !l02Enabled ? "비전략물자이거나 제재국(나2 지역) 거래 건으로 포괄허가 대상이 아닙니다." : undefined;
-  add('L-02', '별지 6호 포괄수출허가신청서', l02Enabled, l02Reason, '인허가');
+  // ── 허가 ──
+  // 고시 제26조①9호: 암호화품목(5D002 등)을 민간기업 내부시스템 구축·운영 또는 민수용 제품 개발·생산 용도로
+  // 수출하고, 최종목적지국가가 바세나르체제 회원국이거나 [별표 23] 국가에 본사를 둔 민간 최종사용자인 경우 허가 면제.
+  // 여기서는 원문으로 확인된 [별표 23] 요건만 자동 판단한다(바세나르 회원국 목록은 사내 미검증).
+  // 제26조①은 "기술이 아닌 것"에 대한 면제이므로 기술 수출에는 적용하지 않는다.
+  const annex23Exempt = computedEccn === '5D002' && !isTech && !!t.cryptoCivilPurpose
+    && isAnnex23Country(t.endUserHqCountry || '') && !isB2;
+  const hasComp = !!t.hasComprehensiveLicense && !!(t.comprehensiveLicenseNo || '').trim();
+  const needsLicense = strategic && !annex23Exempt && !hasComp;
 
-  // 12. L-03 (Catch-All)
-  // [#2 Fix] 전략물자수출입고시 제19조의2: ECCN 무관, 우려거래자/WMD 의심 징후가 있으면 상황허가 발동
-  const l03Enabled = hasRedFlags || cslApiHit;
-  add('L-03', '별지 2호 상황허가신청서', l03Enabled, l03Enabled ? undefined : "상황허가 대상이 아닙니다. (우려거래자 미일치, 의심징후 없음)", '상황허가 패키지');
+  add('L-01', `${FORM_LABELS.licenseApplication} (개별수출허가)`, needsLicense,
+    !strategic ? '사내 1차 판단 결과 비해당입니다 (판정 확정 후 재확인).'
+      : annex23Exempt ? '고시 제26조①9호 요건 입력값 기준 허가면제 — 사전/사후거래보고 대상입니다.'
+      : '유효한 포괄수출허가 번호가 입력되었습니다.',
+    '인허가', computedEccn === 'ML21' ? '군용물자는 방위사업청 소관 허가입니다 (고시 제5조). 허가기관 안내를 확인하십시오.'
+      : isB2 ? "나의2 지역: [별표 6] 제3호 등에 따라 서류·허가 면제가 제한됩니다." : undefined);
 
-  // 13. L-04
-  const l04Enabled = l03Enabled && isITT;
-  add('L-04', '별지 2의2호 - 상황허가 무형이전 부속서류', l04Enabled, l04Enabled ? undefined : (l03Enabled ? "무형기술이전/SW(ITT) 거래가 아닙니다." : "상황허가 대상이 아닙니다."), '상황허가 패키지');
+  if (isTech) {
+    add('L-TECH', FORM_LABELS.techSpec, needsLicense, '개별수출허가 신청 대상이 아닙니다.', '인허가',
+      '기술 수출은 고시 제20조②의 서류를 따르며 제21조①(가 지역 서류면제)이 적용되지 않습니다.');
+  }
 
+  add('L-02', FORM_LABELS.comprehensiveLicense, strategic && t.isCP_AA && !isB2,
+    !strategic ? '비해당 품목입니다.' : isB2 ? '나의2 지역은 포괄수출허가 대상이 아닙니다.'
+      : '자율준수무역거래자 지정(AA 이상) 후 신청할 수 있습니다. 지정서 정보가 등록되지 않았습니다.',
+    '인허가', '대상 품목은 [별표 8], 등급별 가능 지역은 [별표 19]를 따릅니다.');
 
-  // 16. L-10
-  const l10Enabled = computedEccn === '5D002' && !isGroupA; // L-01 신청 시 요구 (!isGroupA)
-  add('L-10', '수출자 서약서', l10Enabled, l10Enabled ? undefined : "서약서 제출 대상이 아닙니다.", '인허가');
+  // 상황허가: 고시 제55조① — 별지 제1호 서식 + 제20조 서류. 대상 여부는 제54조(인지·의심·통보)로 판단.
+  const catchAllCandidate = !strategic && (hasRedFlags || cslApiHit);
+  add('L-03', `${FORM_LABELS.licenseApplication} (상황허가)`, catchAllCandidate,
+    strategic ? '전략물자 해당 품목은 개별/포괄수출허가 절차를 따릅니다.' : '의심징후·우려거래자 일치가 없습니다.',
+    '상황허가 패키지', '상황허가 대상 여부는 고시 제54조 요건으로 담당자가 판단합니다.');
 
-  // 17. DOC-CONTRACT
-  const contractEnabled = !isGroupA;
-  add('DOC-CONTRACT', '수출계약서', contractEnabled, contractEnabled ? undefined : "전략물자 수출입고시 제21조제1항: '가' 지역 수출 시 계약서 제출이 면제됩니다.", '기타');
+  // ── 허가 신청 첨부서류 (고시 제20조, 제21조) ──
+  const licenseDocsNeeded = needsLicense || catchAllCandidate;
+  // 제21조①: 물품(기술 아님)을 가 지역으로 → 제20조①1호, 4~6호 면제
+  // 제21조①은 "제5조에서 정한 산업통상부장관의 허가 대상품목"에 한정 → 군용물자(ML)는 제외
+  const goodsGroupAExempt = !isTech && isGroupA && computedEccn !== 'ML21';
 
-  // 18. DOC-ENDUSER 세 종 분기 (전략물자수출입고시 별지 구분)
-  // [별지 2의3] 바세나르 통제품목(5D002 등) 수출 시 엄격한 서약 필요
-  const isWassenaarItem = computedEccn === '5D002' || computedEccn === 'ML21';
-  const endUserBaseEnabled = !isGroupA && !isCP_AA;
-  
-  add('DOC-ENDUSER-WA', '[별지 2의3] 최종사용자서약서 (바세나르 통제품목용)',
-    endUserBaseEnabled && isWassenaarItem,
-    (endUserBaseEnabled && isWassenaarItem) ? undefined :
-      isGroupA || isCP_AA ? "CP AA 등급 / '가'지역 수출: 서약서 제출 면제" :
-      "바세나르 통제품목(5D002/ML21) 대상이 아닙니다. 별지 2의2 서약서를 사용하세요.",
-    '기타'
-  );
-  
-  // [별지 2의2] 일반 전략물자 수출 시 표준 서약서
-  add('DOC-ENDUSER-GEN', '[별지 2의2] 최종사용자서약서 (일반)',
-    endUserBaseEnabled && !isWassenaarItem,
-    (endUserBaseEnabled && !isWassenaarItem) ? undefined :
-      isGroupA || isCP_AA ? "CP AA 등급 / '가'지역 수출: 서약서 제출 면제" :
-      "전략물자 해당 품목이면 '별지 2의3 (바세나르용)'를 사용하세요.",
-    '기타'
-  );
-  
-  // [별지 2] 개별수출허가(L-01) 신청 시 최종수하인/구매자 서약서 첨부
-  add('DOC-ENDUSER-2', '[별지 2] 최종수하인·구매자 서약서 (개별허가 첨부용)',
-    l01Enabled,
-    l01Enabled ? undefined : "개별수출허가(L-01) 신청 대상이 아닙니다.",
-    '기타'
-  );
+  add('DOC-CONTRACT', '수출계약서·신용장·가계약서 중 1부', licenseDocsNeeded && !goodsGroupAExempt,
+    !licenseDocsNeeded ? '허가 신청 대상이 아닙니다.' : "고시 제21조①: 물품을 '가' 지역으로 수출하는 경우 제출 면제 (사내 보관은 유지)",
+    '인허가', isTech ? '기술 수출이라도 서면계약 없이 수출하는 경우는 제출하지 않음 (제20조② 단서)' : undefined);
 
-  // 19. J-01
-  add('J-01', '별지 24호 자진신고서', isRevoked, isRevoked ? undefined : "사고 발생 시에만 활성화됩니다.", '사후/보고');
+  add('DOC-CONSIGNEE', FORM_LABELS.consigneeStatement, licenseDocsNeeded && !isTech && !goodsGroupAExempt,
+    !licenseDocsNeeded ? '허가 신청 대상이 아닙니다.' : isTech ? '기술 수출 서류 목록(제20조②)에 없는 서류입니다.'
+      : "고시 제21조①: '가' 지역 물품 수출 시 제출 면제",
+    '인허가', '구매자·최종수하인·최종사용자가 같으면 제출 면제 (제21조③) — 해당 시 담당자가 판단');
 
-  // 20. J-02
-  add('J-02', '별지 25호 재발방지 계획서', isRevoked, isRevoked ? undefined : "사고 발생 시에만 활성화됩니다.", '사후/보고');
+  add('L-10', FORM_LABELS.exporterPledge, licenseDocsNeeded && !goodsGroupAExempt,
+    !licenseDocsNeeded ? '허가 신청 대상이 아닙니다.' : "고시 제21조①: '가' 지역 물품 수출 시 제출 면제",
+    '인허가', '현행 고시(제2026-101호)에서 삭제되었다는 보도가 있음 — 원문 확인 전까지 기존 기준 유지');
 
-  // 21. K-01
-  const k01Enabled = isLicenseExempt && (isRussiaBelarus || isPreReportChosen);
-  add('K-01', '사전거래보고서', k01Enabled, k01Enabled ? undefined : "사전거래보고 대상이 아닙니다.", '사후/보고');
+  const euEnabled = licenseDocsNeeded && !goodsGroupAExempt;
+  add('DOC-ENDUSER', `${FORM_LABELS.endUserStatement} (바세나르 품목은 ${FORM_LABELS.endUserStatementWA} 가능)`, euEnabled,
+    !licenseDocsNeeded ? '허가 신청 대상이 아닙니다.' : "고시 제21조①: '가' 지역 물품 수출 시 제출 면제",
+    '인허가', [
+      '국제수출통제체제 회원국 수출 면제(제21조④1호), [별표 19] 서류면제(기존 실적 최종사용자·동일 품목 등)는 담당자가 요건을 확인한 경우에만 제외',
+      pendingNote,
+    ].filter(Boolean).join(' / '));
 
-  // 22. K-02
-  const k02Enabled = isLicenseExempt && !isRussiaBelarus && isPostReportChosen;
-  let k02Reason = "사후거래보고 대상이 아닙니다.";
-  if (isLicenseExempt && isRussiaBelarus) k02Reason = "러시아/벨라루스 특례 건은 사후거래보고가 불인정되며, 사전보고(K-01)가 필수입니다.";
-  add('K-02', '사후거래보고서', k02Enabled, k02Enabled ? undefined : k02Reason, '사후/보고');
+  // ── 사고·보고 ──
+  add('J-01', FORM_LABELS.voluntaryReport, isRevoked, '사고 발생 시에만 활성화됩니다.', '사후/보고');
+  add('J-02', FORM_LABELS.preventionPlan, isRevoked, '사고 발생 시에만 활성화됩니다.', '사후/보고');
 
-  // G-03: 수출허가 관리대장 — 허가증 발급 후 이력 추적 (L-01 또는 L-02 활성화 시)
-  const g03Enabled = l01Enabled || l02Enabled;
-  add('G-03', '수출허가 관리대장', g03Enabled,
-    g03Enabled ? undefined : "수출허가 신청 대상이 아닙니다.", '인허가');
+  const exemptReport = annex23Exempt || t.isLicenseExempt;
+  const k01Enabled = exemptReport && (t.isRussiaBelarus || t.isPreReportChosen);
+  add('K-01', FORM_LABELS.preReport, k01Enabled, '사전거래보고 대상이 아닙니다.', '사후/보고', '수출 전 제출 (고시 제26조①)');
+  const k02Enabled = exemptReport && !t.isRussiaBelarus && (t.isPostReportChosen || !t.isPreReportChosen);
+  let k02Reason = '사후거래보고 대상이 아닙니다.';
+  if (exemptReport && t.isRussiaBelarus) k02Reason = '러시아·벨라루스 건은 [별표 24]를 확인하고 사전거래보고로 처리합니다.';
+  add('K-02', FORM_LABELS.postReport, k02Enabled, k02Reason, '사후/보고', '수출 후 3개월 이내 제출 (고시 제26조①)');
 
-  // 23. K-03, K-04: 연간 정기 보고서 — 개별 수출 건 워크플로우에서 분리 (별도 연간 보고 메뉴에서 관리)
-  add('K-03', 'CP 연간 운영 보고서', false, '연간 정기 보고서는 개별 수출 건이 아닌 별도 메뉴(연간 CP 보고)에서 작성합니다.', '사후/보고');
-  add('K-04', 'CP 연간 실적 보고서', false, '연간 정기 보고서는 개별 수출 건이 아닌 별도 메뉴(연간 CP 보고)에서 작성합니다.', '사후/보고');
+  const g03Enabled = needsLicense || (strategic && t.isCP_AA && !isB2);
+  add('G-03', '수출허가 관리대장', g03Enabled, '수출허가 신청 대상이 아닙니다.', '인허가');
 
-  // 25, 26, 27. M-01 ~ M-03
-  add('M-01', '별지 7호 수입목적확인서', isImport, isImport ? undefined : "수입 거래가 아닙니다.", '수입/통관');
-  add('M-02', '별지 8호 수입내역 신고서', isImport, isImport ? undefined : "수입 거래가 아닙니다.", '수입/통관');
-  add('M-03', '별지 9호 통관증명서', isImport, isImport ? undefined : "수입 거래가 아닙니다.", '수입/통관');
+  add('K-03', '자율준수체제 운영 보고서 (고시 별지 제18호)', false, '정기 보고서는 개별 거래가 아닌 연간 보고 메뉴에서 작성합니다.', '사후/보고');
+  add('K-04', '자율준수무역거래자 실적 보고서 (고시 별지 제19호)', false, '정기 보고서는 개별 거래가 아닌 연간 보고 메뉴에서 작성합니다.', '사후/보고');
+
+  add('M-01', '별지 7호 수입목적확인서', t.isImport, '수입 거래가 아닙니다.', '수입/통관');
+  add('M-02', '별지 8호 수입내역 신고서', t.isImport, '수입 거래가 아닙니다.', '수입/통관');
+  add('M-03', '별지 9호 통관증명서', t.isImport, '수입 거래가 아닙니다.', '수입/통관');
 
   return docs;
 }
-
 
 export function stateToFormData(docId: string, state: ExportCaseState): any {
   // Pre-fill default values from global state (Multi-key support for 27 forms)
@@ -381,10 +390,10 @@ export function stateToFormData(docId: string, state: ExportCaseState): any {
     agentName: state.parties.agent?.name || 'N/A',
     manufacturer: state.parties.agent?.name || '',
     
-    // 2. Classification
-    eccn: state.classification.computedEccn || '',
-    eccnCode: state.classification.computedEccn || '',
-    controlNo: state.classification.computedEccn || '',
+    // 2. Classification ('EAR99'는 내부 호환값 → 서식에는 "비해당"으로 표기)
+    eccn: eccnLabel(state.classification.computedEccn),
+    eccnCode: isStrategicItem(state.classification.computedEccn) ? state.classification.computedEccn : '비해당',
+    controlNo: isStrategicItem(state.classification.computedEccn) ? state.classification.computedEccn : '비해당',
     hsCode: state.classification.hskCode,
     hskCode: state.classification.hskCode,
     itemName: state.classification.productName || '',
@@ -417,13 +426,11 @@ export function stateToFormData(docId: string, state: ExportCaseState): any {
     exportQuantity: state.transaction.exportQuantity || '',
     exportContractNo: state.transaction.contractNo || '',
     
-    // 6. K-01 사전보고 기한 자동 계산
+    // 6. 사전·사후거래보고 기한 (고시 제26조①: 수출 전 / 수출 후 3개월 이내)
     plannedExportDate: state.transaction.plannedExportDate || '',
-    preReportDeadline: (() => {
-      if (!state.transaction.plannedExportDate) return '';
-      const d = new Date(state.transaction.plannedExportDate);
-      d.setDate(d.getDate() - 30);
-      return d.toISOString().split('T')[0];
-    })(),
+    preReportDeadline: state.transaction.plannedExportDate
+      ? getReportDeadlines(state.transaction.plannedExportDate).preReportDeadline + ' 이전' : '',
+    postReportDeadline: state.transaction.plannedExportDate
+      ? getReportDeadlines(state.transaction.plannedExportDate).postReportDeadline : '',
   };
 }

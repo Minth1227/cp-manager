@@ -1,5 +1,6 @@
 import React from 'react';
-import { ExportCaseState, computeEccn } from '../../utils/complianceRuleEngine';
+import { ExportCaseState, computeEccn, isStrategicItem, eccnLabel } from '../../utils/complianceRuleEngine';
+import { isAnnex23Country } from '../../utils/legalBasis';
 import { Shield, FileText, AlertOctagon, UploadCloud, CheckCircle } from 'lucide-react';
 
 interface Props {
@@ -9,17 +10,26 @@ interface Props {
 
 export const Step2Classification: React.FC<Props> = ({ state, onChange }) => {
   const { classification } = state;
-  const { computedEccn, isUsEarSubject } = computeEccn(classification);
+  const { isUsEarSubject } = computeEccn(classification);
+  // 전문판정은 입력값, 자가판정(사내 1차 판단)은 문항으로 계산된 값
+  const computedEccn = classification.classificationType === 'PRO'
+    ? (classification.computedEccn || 'EAR99')
+    : computeEccn(classification).computedEccn;
+  const strategic = isStrategicItem(computedEccn);
+  const tx = state.transaction;
+  const updateTransaction = (field: keyof ExportCaseState['transaction'], value: any) =>
+    onChange({ ...state, transaction: { ...tx, [field]: value } });
 
   const updateClassification = (field: keyof ExportCaseState['classification'], value: any) => {
     const updatedClass = { ...classification, [field]: value };
     const { computedEccn: newEccn, isUsEarSubject: newUsEar } = computeEccn(updatedClass);
-    
+    // 전문판정(PRO)은 판정서에 기재된 값을 직접 입력하므로 문항 계산값으로 덮어쓰지 않는다
+    const keepManual = updatedClass.classificationType === 'PRO' && field !== 'classificationType';
     onChange({
       ...state,
       classification: { 
         ...updatedClass,
-        computedEccn: newEccn,
+        computedEccn: keepManual ? (field === 'computedEccn' ? value : classification.computedEccn) : newEccn,
         isUsEarSubject: newUsEar
       }
     });
@@ -43,7 +53,7 @@ export const Step2Classification: React.FC<Props> = ({ state, onChange }) => {
           F-04 전략물자 판정관리대장 등록
         </h2>
         <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
-          대외무역법 제20조
+          대외무역법 제20조(전문판정)·제20조의2(자가판정)
         </span>
       </div>
 
@@ -94,11 +104,11 @@ export const Step2Classification: React.FC<Props> = ({ state, onChange }) => {
               <input type="text" className="w-full text-sm border-emerald-300 rounded-md" value={classification.kostiNumber || ''} onChange={e => updateClassification('kostiNumber', e.target.value)} placeholder="KOS-2026-XXXX" />
             </div>
              <div className="space-y-1">
-              <label className="text-xs font-semibold text-emerald-700">판정 ECCN 직접 입력</label>
+              <label className="text-xs font-semibold text-emerald-700">전문판정서의 판정 결과</label>
               <select className="w-full text-sm border-emerald-300 rounded-md" value={classification.computedEccn || 'EAR99'} onChange={e => updateClassification('computedEccn', e.target.value)}>
-                <option value="EAR99">EAR99 (비해당)</option>
-                <option value="5D002">5D002 (해당)</option>
-                <option value="ML21">ML21 (해당)</option>
+                <option value="EAR99">비해당</option>
+                <option value="5D002">5D002 (전략물자 해당)</option>
+                <option value="ML21">ML21 (군용물자 해당)</option>
               </select>
             </div>
           </div>
@@ -108,13 +118,13 @@ export const Step2Classification: React.FC<Props> = ({ state, onChange }) => {
       {classification.classificationType === 'SELF' && (
         <>
           <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-            <span className="text-sm font-semibold text-slate-600">실시간 자가판정 결과 (Computed ECCN):</span>
+            <span className="text-sm font-semibold text-slate-600">사내 1차 판단 결과 (자가판정서로 확정 필요):</span>
             <span className={`px-4 py-1.5 rounded-full text-sm font-bold shadow-sm ${
               computedEccn === '5D002' 
                 ? 'bg-red-100 text-red-700 border border-red-200' 
                 : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
             }`}>
-              {computedEccn}
+              {eccnLabel(computedEccn)}
             </span>
           </div>
 
@@ -122,10 +132,10 @@ export const Step2Classification: React.FC<Props> = ({ state, onChange }) => {
             <div className="bg-amber-50 border border-amber-300 p-4 rounded-lg flex items-start gap-3">
               <AlertOctagon className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-amber-800 font-bold text-sm">US EAR 0% De minimis Rule Warning</h4>
+                <h4 className="text-amber-800 font-bold text-sm">미국 EAR 별도 검토 필요 (한국 법령과 별개)</h4>
                 <p className="text-amber-700 text-xs mt-1">
-                  미국산 원산지 코드가 포함되어 있으며 5D002로 판정되었습니다. 
-                  미국 상무부(BIS) EAR 통제 규정에 따라 최소허용기준(De minimis) 0% 룰이 적용되어 재수출 통제 대상입니다.
+                  미국산 암호 코드가 포함되어 있습니다. 미국 재수출 규정(EAR) 적용 여부는 미국 규정에 따라 별도로 검토하십시오.
+                  이 표시는 한국 자가판정·수출허가 절차를 대체하거나 면제하지 않습니다.
                 </p>
               </div>
             </div>
@@ -137,7 +147,7 @@ export const Step2Classification: React.FC<Props> = ({ state, onChange }) => {
               <div>
                 <h4 className="text-rose-800 font-bold text-sm">ML 군용 물자 (Military List) 감지</h4>
                 <p className="text-rose-700 text-xs mt-1">
-                  방위사업청 통제 품목(ML21)으로 판정되었습니다. 이 건은 산업통상자원부가 아닌 <strong>방위사업청</strong>의 별도 수출허가가 필요하며, 대외무역법 제20조에 따른 일반적인 자율준수무역거래자 특례가 제한될 수 있습니다.
+                  군용물자(ML21)로 판정되었습니다. 군용물자의 허가기관은 <strong>방위사업청</strong>입니다(고시 제5조). 허가 절차와 서류는 방위사업청 안내에 따르십시오.
                 </p>
               </div>
             </div>
@@ -204,10 +214,10 @@ export const Step2Classification: React.FC<Props> = ({ state, onChange }) => {
                 <div>
                   <p className="font-semibold text-slate-800 text-sm">Q4. 미국산 암호화 소스코드 포함 여부 <span className="text-xs text-slate-400 font-normal">(US Code Commingled)</span></p>
                   <p className="text-xs text-slate-500 mt-1">
-                    SW에 미국산 통제 암호화 소스코드가 1% 이상 포함되어 있으면 '예':<br/>
+                    SW에 미국산 암호화 소스코드·라이브러리가 포함되어 있으면 '예':<br/>
                     · 미국산 OpenSSL, BoringSSL, mbedTLS 등 라이브러리 내장 여부<br/>
                     · 미국 기업이 개발한 암호화 모듈 포함 여부<br/>
-                    <span className="text-amber-600 font-medium">→ '예' 선택 시 미국 상무부(BIS) EAR 재수출 규제 대상이 될 수 있습니다</span>
+                    <span className="text-amber-600 font-medium">→ '예' 선택 시 미국 EAR 재수출 규정 검토 메모가 추가됩니다 (한국 판정 결과에는 영향 없음)</span>
                   </p>
                 </div>
                 <div className="flex gap-3">
@@ -218,6 +228,46 @@ export const Step2Classification: React.FC<Props> = ({ state, onChange }) => {
             </div>
           </div>
         </>
+      )}
+
+      {classification.classificationType !== 'NONE' && (
+        <div className="p-4 border rounded-lg bg-white space-y-3">
+          <p className="font-semibold text-slate-800 text-sm">제공 범위 및 허가면제 요건</p>
+          <label className="flex items-start gap-2 text-sm text-slate-700">
+            <input type="checkbox" className="mt-1" checked={!!tx.isTechnologyTransfer} onChange={e => updateTransaction('isTechnologyTransfer', e.target.checked)} />
+            <span>기술(설계·제조·사용 관련 기술자료, 기술지원·교육 등)을 함께 제공한다
+              <span className="block text-xs text-slate-500">기술 수출은 고시 제20조②의 서류를 따르며, '가' 지역 서류면제(제21조①)와 제26조① 허가면제가 적용되지 않습니다.</span></span>
+          </label>
+          {computedEccn === '5D002' && !tx.isTechnologyTransfer && (
+            <div className="pl-6 space-y-2 border-l-2 border-indigo-100">
+              <label className="flex items-start gap-2 text-sm text-slate-700">
+                <input type="checkbox" className="mt-1" checked={!!tx.cryptoCivilPurpose} onChange={e => updateTransaction('cryptoCivilPurpose', e.target.checked)} />
+                <span>민간기업의 내부시스템 구축·운영 또는 민수용 제품 개발·생산 용도다 (고시 제26조제1항제9호)</span>
+              </label>
+              <input type="text" className="w-full md:w-1/2 text-sm border-slate-300 rounded-md p-2" placeholder="민간 최종사용자의 본사 소재국 (예: 독일)"
+                value={tx.endUserHqCountry || ''} onChange={e => updateTransaction('endUserHqCountry', e.target.value)} />
+              {tx.cryptoCivilPurpose && tx.endUserHqCountry && (
+                <p className={`text-xs ${isAnnex23Country(tx.endUserHqCountry) ? 'text-emerald-700' : 'text-slate-500'}`}>
+                  {isAnnex23Country(tx.endUserHqCountry)
+                    ? '[별표 23] 국가 본사 — 입력값 기준 허가면제 요건 충족. 사전 또는 사후거래보고(별지 제16호·제16호의2)가 필요합니다.'
+                    : '[별표 23] 국가가 아닙니다. 바세나르체제 회원국 요건 해당 여부는 담당자가 별도로 확인합니다.'}
+                </p>
+              )}
+            </div>
+          )}
+          {strategic && (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={!!tx.hasComprehensiveLicense} onChange={e => updateTransaction('hasComprehensiveLicense', e.target.checked)} />
+                유효한 포괄수출허가 보유
+              </label>
+              {tx.hasComprehensiveLicense && (
+                <input type="text" className="text-sm border-slate-300 rounded-md p-1.5" placeholder="[필수] 포괄수출허가 번호"
+                  value={tx.comprehensiveLicenseNo || ''} onChange={e => updateTransaction('comprehensiveLicenseNo', e.target.value)} />
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {classification.classificationType !== 'NONE' && (
@@ -240,17 +290,17 @@ export const Step2Classification: React.FC<Props> = ({ state, onChange }) => {
             <h3 className="text-xl font-bold text-white mb-2">분석 결과 요약 및 다음 단계 안내</h3>
             <div className="space-y-2 mb-4 text-sm text-slate-300">
               <p>• 👤 <b>사전 스크리닝:</b> {state.screening.hasRedFlags ? <span className="text-amber-400 font-bold">의심징후 {state.screening.selectedRedFlags.length}건 발견됨</span> : '안전함 (블랙리스트 아님)'}</p>
-              <p>• 📦 <b>품목 판정결과:</b> {computedEccn === 'NON_CONTROLLED' ? '전략물자 비해당' : <span className="text-red-400 font-bold">전략물자 해당 ({computedEccn})</span>}</p>
-              <p>• 🌍 <b>목적국 위험도:</b> {state.destination.isSanctionedCountry ? <span className="text-red-500 font-bold">제재국가 대상</span> : state.destination.isGroupA ? "안전 ('가' 지역)" : "'가' 지역 외 국가"}</p>
+              <p>• 📦 <b>품목 판정결과:</b> {!strategic ? '전략물자 비해당 (판정 확정 필요)' : <span className="text-red-400 font-bold">{eccnLabel(computedEccn)}</span>}</p>
+              <p>• 🌍 <b>목적지 지역:</b> {state.destination.isSanctionedCountry ? <span className="text-red-500 font-bold">나의2 지역</span> : state.destination.isGroupA ? "'가' 지역" : "'나의1' 지역"}</p>
             </div>
             
             <div className="bg-indigo-900/60 p-4 rounded-lg border border-indigo-500/50">
               <p className="text-indigo-100 font-medium text-sm leading-relaxed">
                 👉 앞선 검증 결과에 따라, 귀하의 이번 수출 건은 다음 단계(Step 3)에서 <br/>
                 <strong className="text-white text-lg mt-1 block">
-                  {computedEccn !== 'NON_CONTROLLED' ? '🎯 [ 개별수출허가 패키지 ]' : 
-                   (state.screening.hasRedFlags && !state.destination.isGroupA) ? '🚨 [ 상황허가(Catch-All) 패키지 ]' : 
-                   '✅ [ 일반 수출 (서류 면제) 트랙 ]'}
+                  {strategic ? '🎯 [ 수출허가 검토 트랙 ]' : 
+                   (state.screening.hasRedFlags || state.screening.cslApiHit) ? '🚨 [ 상황허가 검토 트랙 ]' : 
+                   '✅ [ 비해당 일반 수출 트랙 (판정·거래심사 기록은 보관) ]'}
                 </strong> 
                 으로 자동 배정됩니다. 하단의 '다음 단계로 이동'을 눌러 필수 서류만 작성하십시오.
               </p>

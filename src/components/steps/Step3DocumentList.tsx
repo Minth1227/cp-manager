@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExportCaseState, getEnabledDocuments, DocumentConfig, stateToFormData, computeEccn } from '../../utils/complianceRuleEngine';
+import { ExportCaseState, getEnabledDocuments, DocumentConfig, stateToFormData, computeEccn, resolveDestination, isStrategicItem } from '../../utils/complianceRuleEngine';
 import { FileStack, CheckCircle2, Lock, FileText, ChevronRight, Folder } from 'lucide-react';
 import { DynamicFormModal } from '../DynamicFormModal';
 
@@ -39,7 +39,7 @@ export const Step3DocumentList: React.FC<Props> = ({ state, onChange }) => {
       }
       // 2. Destination 동기화 (Z-01의 q_country → destination)
       if (formData.q_country) {
-        const { resolveDestination } = require('../../utils/complianceRuleEngine');
+        // (종전 require()는 Vite 브라우저 번들에서 동작하지 않아 이 분기에서 오류가 났음)
         z01Patch.destination = resolveDestination(formData.q_country);
       }
       // 3. Classification 동기화 (Z-01의 q_strategic, Q1~Q4 결과)
@@ -94,10 +94,10 @@ export const Step3DocumentList: React.FC<Props> = ({ state, onChange }) => {
     groupedDocs[pkgName].push(doc);
   });
 
-  const { computedEccn } = computeEccn(state.classification);
-  const trackName = computedEccn !== 'NON_CONTROLLED' ? '개별수출허가 패키지' : 
-                   (state.screening.hasRedFlags && !state.destination.isGroupA) ? '상황허가(Catch-All) 패키지' : 
-                   '일반 수출 (서류 면제) 트랙';
+  const computedEccn = state.classification.computedEccn || computeEccn(state.classification).computedEccn;
+  const trackName = isStrategicItem(computedEccn) ? '수출허가 검토' : 
+                   (state.screening.hasRedFlags || state.screening.cslApiHit) ? '상황허가 검토' : 
+                   '비해당 일반 수출';
 
   return (
     <div className="p-6 space-y-6 bg-white rounded-xl shadow-sm border border-slate-100">
@@ -172,6 +172,7 @@ export const Step3DocumentList: React.FC<Props> = ({ state, onChange }) => {
                             )}
                           </div>
                           <h3 className="font-semibold text-slate-800">{doc.name}</h3>
+                          {doc.note && <p className="text-xs text-amber-700 mt-1 leading-snug">ⓘ {doc.note}</p>}
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -215,13 +216,13 @@ export const Step3DocumentList: React.FC<Props> = ({ state, onChange }) => {
                           </div>
                         </div>
                         <span className="text-xs font-medium text-slate-400 px-3 py-1 bg-slate-100 rounded-md">
-                          제출 면제 (Disabled)
+                          해당 없음
                         </span>
                       </div>
                       {/* 비활성화 사유 항상 표시 (hover 불필요) */}
                       {doc.disabledReason && (
                         <p className="text-xs text-slate-400 mt-2 ml-9 leading-snug">
-                          Ὤ8 {doc.disabledReason}
+                          ⓘ {doc.disabledReason}
                         </p>
                       )}
                     </div>

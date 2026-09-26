@@ -41,7 +41,7 @@ export async function renderSearchView(container, onSelectForm, initialTab = 'ca
       <!-- Search Filter Bar -->
       <div class="card" style="margin-bottom: 20px; padding: 18px; border-top: 4px solid var(--accent-purple);">
         <div style="margin-bottom: 12px; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5;">
-          💡 <strong>상황허가(Catch-all)란?</strong> 전략물자에 해당하지 않는 일반 품목이라도 <strong>대량살상무기(WMD) 전용 우려가 있거나 고시 [별표 2의2]에 명시된 국가(이란, 시리아, 파키스탄, 러시아 등)로 수출</strong>될 경우 산업통상자원부장관의 상황허가를 받아야 합니다.
+          💡 <strong>상황허가(Catch-all)란?</strong> 전략물자에 해당하지 않는 일반 품목이라도 <strong>대량살상무기(WMD) 전용 우려가 있거나 고시 [별표 2의2]에 명시된 국가(이란, 시리아, 파키스탄, 러시아 등)로 수출</strong>될 경우 산업통상부장관의 상황허가를 받아야 합니다.
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
           <input type="text" id="catchall-search-input" placeholder="품목명, 모델, 규격, 또는 HS코드로 검색 (예: 공작기계, 펌프, 밸브, 소프트웨어, 8471...)" style="flex: 2; min-width: 260px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem;">

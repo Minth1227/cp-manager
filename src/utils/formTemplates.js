@@ -1095,7 +1095,7 @@ function tmpl_01_05(data, isEditMode = false) {
 <div class="${isEditMode ? 'interactive-mode' : ''}" style="${isEditMode ? 'margin:0; max-width:100%;' : ''}">${printButton}
 <div class="byeolji-title" style="margin-top:40px;">사 실 확 인 서</div>
 <div style="margin: 40px 0; font-size:11pt; line-height: 1.8;">
-  <p><strong>수신:</strong> 산업통상자원부장관 귀하</p>
+  <p><strong>수신:</strong> 산업통상부장관 귀하</p>
   <p><strong>제출일자:</strong> ${field(data, 'submitDate', isEditMode)}</p>
   <p><strong>${req('제출업체')}:</strong> ${field(data, 'companyName', isEditMode)}</p>
   <p><strong>대표자:</strong> ${field(data, 'ceoName', isEditMode)}</p>

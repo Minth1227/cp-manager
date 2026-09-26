@@ -3,6 +3,7 @@
 // 여기서 받아 처리한다. 로그인 세션이 없는 서버 요청이므로 Firebase Admin SDK로 직접
 // Firestore/Storage에 접근하고, 문서는 pdf-lib로 서버에서 즉시 서명 PDF를 생성한다.
 import { verifySlackSignature } from './lib/slackSignature.js';
+import { resolveBotToken } from './lib/requireAuth.js';
 import { getAdminDb, getAdminBucket } from './lib/firebaseAdmin.js';
 import { generateSignedDocumentPdf } from './lib/signedPdf.js';
 import { buildPdfFieldsForForm } from './lib/formPdfFields.js';
@@ -53,15 +54,21 @@ function sha256(bytes) {
   return crypto.createHash('sha256').update(Buffer.from(bytes)).digest('hex');
 }
 
-// 문서번호는 승인 완료 시점에만 발급한다 (store.js의 generateDocNumber와 동일한 규칙 —
-// "기안자 부서-연도-일련번호", 부서+연도 조합별 매년 1부터 재시작). 클라이언트는 브라우저
-// Firestore SDK를 쓰므로 서버(Admin SDK) 쪽에 별도로 동일 로직을 둔다.
-function computeNextDocNumber(docNumberCounters, department) {
-  const dept = (department || '미지정부서').trim();
+// 문서번호: 회사 전사 공통 채번 체계 PSR{연도 2자리}-{일련번호} (예: PSR26-124)를 따른다.
+// (「CP 문서관리 기준」: 채번은 한 곳에서만. 종전 "부서-연도-번호"는 회사 체계와 달랐음)
+// 동시에 두 건이 승인돼도 번호가 겹치지 않도록 counters/PSR-{연도} 문서를 트랜잭션으로 증가시킨다.
+// 이미 다른 경로(품의·지출결의 등)로 쓴 번호가 있으면 관리자가 counters/PSR-{연도}.last 값을
+// 마지막으로 쓴 번호로 먼저 맞춰 두어야 한다.
+async function issueDocNumber(db) {
   const year = new Date().getFullYear();
-  const seqKey = `${dept}-${year}`;
-  const next = ((docNumberCounters || {})[seqKey] || 0) + 1;
-  return { docNumber: `${dept}-${year}-${String(next).padStart(3, '0')}`, seqKey, next };
+  const ref = db.collection('counters').doc(`PSR-${year}`);
+  const next = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const n = (snap.exists ? Number(snap.data().last || 0) : 0) + 1;
+    tx.set(ref, { last: n, updatedAt: new Date().toISOString() }, { merge: true });
+    return n;
+  });
+  return `PSR${String(year).slice(-2)}-${String(next).padStart(3, '0')}`;
 }
 
 async function uploadPdfToStorage(bucket, path, bytes) {
@@ -117,7 +124,8 @@ export const handler = async function (event) {
     const globalData = globalSnap.exists ? globalSnap.data() : {};
     const integrations = globalData.integrations || {};
     const approverIds = integrations.slackApproverIds || {};
-    const botToken = integrations.slackBotToken || '';
+    // 서버 환경변수(SLACK_BOT_TOKEN) 우선, 없을 때만 과거 저장값 사용
+    const botToken = resolveBotToken(integrations.slackBotToken || '');
     const api = slackApi(botToken);
 
     // ── 1) 버튼 클릭 (승인/반려) ──
@@ -185,14 +193,11 @@ export const handler = async function (event) {
 
       // 문서번호는 승인 완료(=지금)에만 발급한다. 기안자 부서(_createdByDept, 문서 생성 시점에
       // 기록됨) 기준으로 매기며, 이미 발급되어 있으면(재승인 등) 다시 발급하지 않는다.
-      let docNumberCounters = globalData.docNumberCounters || {};
       if (!formData.docNumber) {
-        const { docNumber, seqKey, next } = computeNextDocNumber(docNumberCounters, formData._createdByDept);
-        formData.docNumber = docNumber;
-        docNumberCounters = { ...docNumberCounters, [seqKey]: next };
+        formData.docNumber = await issueDocNumber(db);
       }
 
-      let updatePatch = { docNumberCounters };
+      let updatePatch = {};
       let pdfButtons = [];
       const filesToShare = []; // { filename, bytes }
       const ledgerEntries = []; // "서명 문서함"에 쌓일 항목들 (getSignedDocuments()가 읽음)

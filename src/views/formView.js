@@ -325,7 +325,7 @@ export async function renderFormView(container, formId, onBack) {
             <h3 style="margin:0 0 12px; font-size:1.3rem;">⚠️ 초민감품목 포괄수출허가 신청 불가</h3>
             <p style="color:var(--text-secondary); margin-bottom:8px; line-height:1.7;">
               해당 거래의 품목은 판정관리대장(F-04)에서 <strong>초민감품목</strong>으로 지정되었습니다.<br/>
-              <strong style="color:var(--accent-amber);">전략물자수출입고시 제22조 및 [별표 8]에 따라 초민감품목은 포괄수출허가를 받을 수 없습니다.</strong>
+              <strong style="color:var(--accent-amber);">전략물자수출입고시 제28조·제34조 및 [별표 8]에 따라 포괄수출허가 대상 품목에서 제외되는 품목은 포괄수출허가를 받을 수 없습니다.</strong>
             </p>
             <p style="color:var(--text-tertiary); font-size:0.9rem; margin-bottom:28px;">
               반드시 <strong>개별수출허가(L-01)</strong> 트랙으로 진행해 주십시오.

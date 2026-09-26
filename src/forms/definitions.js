@@ -164,7 +164,7 @@ export const formDefinitions = {
             key: 'q0_pipeline_emergency',
             label: '🚨 사후 통제 위반 비상사태 지침',
             type: 'info',
-            content: '<strong style="color:red;">즉시 서버 접근 권한을 차단하고 발급된 라이선스 키를 무효화(Revoke)하십시오!</strong><br/><br/>대외무역법 위반 소지가 있습니다. 행정처분 및 과태료 감경을 받기 위해, 무역안보관리원/산업통상자원부에 제출할 <strong>자진신고서(J-01)</strong>와 <strong>재발방지 계획서(J-02)</strong> 양식을 즉시 작성하여 CP 책임자에게 긴급 보고해야 합니다.',
+            content: '<strong style="color:red;">즉시 서버 접근 권한을 차단하고 발급된 라이선스 키를 무효화(Revoke)하십시오!</strong><br/><br/>대외무역법 위반 소지가 있습니다. 행정처분 및 과태료 감경을 받기 위해, 무역안보관리원/산업통상부에 제출할 <strong>자진신고서(J-01)</strong>와 <strong>재발방지 계획서(J-02)</strong> 양식을 즉시 작성하여 CP 책임자에게 긴급 보고해야 합니다.',
             dependsOn: { field: 'q0_pipeline_already_shipped', value: '예 (사후 통제 위반 인지)' }
           }
         ]
@@ -220,7 +220,7 @@ export const formDefinitions = {
             key: 'q_defense_unsure',
             label: '⚠️ [방산물자 여부 미확인 시 주의사항]',
             type: 'info',
-            content: '방산물자 여부가 불확실한 경우 먼저 <strong>방위사업청 방산수출입 콜센터(☎ 1577-1118)</strong>에 문의하시기 바랍니다.<br/>만약 방사청 소관이 아닌 일반 품목이라면 대외무역법에 따라 산업통상자원부장관 등 관계 행정기관의 허가를 받아야 하므로, <strong>아래의 Q2 문항을 계속해서 검토</strong>하시기 바랍니다.<br/><br/><span style="font-size:0.75rem; color:var(--text-secondary);"><strong>⚖️ 법적 근거:</strong> 「대외무역법」 제19조의2 (전략물자를 수출하려는 자는 산업통상자원부장관이나 관계 행정기관의 장의 허가를 받아야 함)</span>',
+            content: '방산물자 여부가 불확실한 경우 먼저 <strong>방위사업청 방산수출입 콜센터(☎ 1577-1118)</strong>에 문의하시기 바랍니다.<br/>만약 방사청 소관이 아닌 일반 품목이라면 대외무역법에 따라 산업통상부장관 등 관계 행정기관의 허가를 받아야 하므로, <strong>아래의 Q2 문항을 계속해서 검토</strong>하시기 바랍니다.<br/><br/><span style="font-size:0.75rem; color:var(--text-secondary);"><strong>⚖️ 법적 근거:</strong> 「대외무역법」 제19조의2 (전략물자를 수출하려는 자는 산업통상부장관이나 관계 행정기관의 장의 허가를 받아야 함)</span>',
             dependsOn: { field: 'q_defense', value: '모름' }
           },
           { 
@@ -790,7 +790,7 @@ export const formDefinitions = {
     title: '[별지 2] 최종수하인·구매자 서약서 (개별허가 첨부용)',
     category: '기타 구비서류',
     indicator: '전략물자수출입고시 별표 9 (별지 2)',
-    legalBasis: '전략물자수출입고시 제19조제3항: 개별수출허가(L-01) 신청 시 최종수하인 및 구매자가 물품의 최종 용도 및 재수출 제한을 서약하는 양식',
+    legalBasis: '전략물자수출입고시 제20조제1항제4호(별지 제2호 최종수하인 진술서): 개별수출허가(L-01) 신청 시 최종수하인 및 구매자가 물품의 최종 용도 및 재수출 제한을 서약하는 양식',
     timing: '개별수출허가(L-01) 신청 시 첨부',
     author: '최종수하인 및 구매자 (해외)',
     retention: '5년',
@@ -1251,12 +1251,12 @@ export const formDefinitions = {
           },
           { key: 'workshopTitle', label: '워크숍 회차 / 행사명', width: '220px', placeholder: '2025 무역안보의 날 부대 워크숍' },
           { key: 'attendDate', label: '참석일자', type: 'date', width: '125px' },
-          { key: 'institution', label: '주관기관', width: '140px', placeholder: '산업통상자원부 / KOSTI' },
+          { key: 'institution', label: '주관기관', width: '140px', placeholder: '산업통상부 / KOSTI' },
           { key: 'evidence', label: '증빙자료', width: '140px', placeholder: '참석확인증 / 명찰 사본' },
         ]
       }
     ],
-    guide: '산업통상자원부 CP 심사기준(별표 20 지표 1.1.4)에 따라 자율수출관리기구 인원은 직무별 4대 필수 외부교육을 이수해야 하며, 기 지정 기업은 3년 유효기간 내 워크숍 3회 및 임원급 1회 이상 참석이 필수입니다. 사내 교육 실적은 [5.1.1] C-00~C-03 양식으로 별도 관리합니다.',
+    guide: '산업통상부 CP 심사기준(별표 20 지표 1.1.4)에 따라 자율수출관리기구 인원은 직무별 4대 필수 외부교육을 이수해야 하며, 기 지정 기업은 3년 유효기간 내 워크숍 3회 및 임원급 1회 이상 참석이 필수입니다. 사내 교육 실적은 [5.1.1] C-00~C-03 양식으로 별도 관리합니다.',
   },
 
   // [신규] A-10: 자율수출관리 세부지침
@@ -1347,8 +1347,8 @@ export const formDefinitions = {
       { key: 'drafter', label: '작성자 / 부서', type: 'text', default: '박하현 (자율수출관리기구 담당자)' },
       { key: 'planDate', label: '계획 수립일자', type: 'date' },
       { key: 'targetAudience', label: '교육 대상 및 인원', type: 'text', default: '전 임직원 26명 (신규 입사자는 근무 개시 3개월 이내)' },
-      { key: 'trainingCycle', label: '교육 체계 및 일정', type: 'textarea', default: '① 기본과정(전 임직원, 연 1회) ② 직무과정A(영업·PM) ③ 직무과정B(개발) ④ 전문과정(담당자·부담당자, 전략물자관리원) ⑤ 경영진 과정(대표이사·기구장) ⑥ 신규자 과정(수시)' },
-      { key: 'resultManagement', label: '이수 관리', type: 'text', default: '출석부(C-02)·결과보고서(C-03) 작성, 전략물자관리원 교육은 수료증으로 갈음' }
+      { key: 'trainingCycle', label: '교육 체계 및 일정', type: 'textarea', default: '① 기본과정(전 임직원, 연 1회) ② 직무과정A(영업·PM) ③ 직무과정B(개발) ④ 전문과정(담당자·부담당자, 무역안보관리원) ⑤ 경영진 과정(대표이사·기구장) ⑥ 신규자 과정(수시)' },
+      { key: 'resultManagement', label: '이수 관리', type: 'text', default: '출석부(C-02)·결과보고서(C-03) 작성, 무역안보관리원 교육은 수료증으로 갈음' }
     ],
     guide: '영등포구 경영평가 계획서 양식을 기반으로 디자인된 공문 스타일 템플릿입니다.',
   },
@@ -2135,7 +2135,7 @@ export const formDefinitions = {
       {
         title: '최종 판정 결과 등록',
         fields: [
-          { key: 'q_decision_type', label: '판정 방식', type: 'select', options: ['', '자가판정', '전문판정(전략물자관리원)', '기타'] },
+          { key: 'q_decision_type', label: '판정 방식', type: 'select', options: ['', '자가판정', '전문판정(무역안보관리원)', '기타'] },
           { key: 'q_decision_result', label: '판정 결과 (해당 여부)', type: 'select', options: ['', '전략물자 해당', '전략물자 비해당', '상황허가 대상'] },
           { 
             key: 'q_sensitivity', 
@@ -2232,7 +2232,7 @@ export const formDefinitions = {
             key: 'dplLegalWarning',
             label: '⚠️ 법적 조치 안내 (우려거래자 일치)',
             type: 'info',
-            text: '<div style="color:var(--accent-red); font-weight:bold; margin-bottom:4px;">[거래 보류 및 개별/상황허가 신청 요망]</div><div style="font-size:0.85rem; line-height:1.5;">대외무역법 제19조 및 고시 제22조에 따라, 제재대상 우려거래자에게는 포괄수출허가를 적용할 수 없으며 무허가 수출이 엄격히 금지됩니다.<br>👉 즉시 선적을 보류하고 자율수출관리기구장에게 보고한 후, 정부(전략물자관리원)에 <strong>개별수출허가 또는 상황허가</strong>를 신청하여 승인을 받아야만 수출이 가능합니다.</div>',
+            text: '<div style="color:var(--accent-red); font-weight:bold; margin-bottom:4px;">[거래 보류 및 개별/상황허가 신청 요망]</div><div style="font-size:0.85rem; line-height:1.5;">고시 제22조제1항제7호에 따라 우려거래자 해당 여부는 수출허가 심사 항목입니다. 우려거래자로 확인되면 거래를 보류하고 자율수출관리기구에 보고합니다.<br>👉 즉시 선적을 보류하고 자율수출관리기구장에게 보고한 후, 정부(무역안보관리원)에 <strong>개별수출허가 또는 상황허가</strong>를 신청하여 승인을 받아야만 수출이 가능합니다.</div>',
             dependsOn: { field: 'dplScreeningResult', value: ['위험 (우려거래자 일치 - 거래 중단)'] }
           }
         ],
@@ -2252,7 +2252,7 @@ export const formDefinitions = {
             key: 'redFlagLegalWarning',
             label: '⚠️ 법적 조치 안내 (상황허가)',
             type: 'info',
-            text: '<div style="color:var(--accent-red); font-weight:bold; margin-bottom:4px;">[출하 보류 및 상황허가 신청 요망]</div><div style="font-size:0.85rem; line-height:1.5;">대외무역법 제19조 제3항 및 고시 제21조에 따라, 1개 이상의 의심 징후가 발견되어 대량살상무기(WMD) 전용 우려가 인지된 경우 자의적인 수출이 금지됩니다.<br>👉 즉시 출하를 보류하고 정부(전략물자관리원)에 <strong>상황허가(Catch-All)</strong>를 신청하여 공식 승인을 받아야 합니다.</div>',
+            text: '<div style="color:var(--accent-red); font-weight:bold; margin-bottom:4px;">[출하 보류 및 상황허가 신청 요망]</div><div style="font-size:0.85rem; line-height:1.5;">대외무역법 제19조 제3항 및 고시 제21조에 따라, 1개 이상의 의심 징후가 발견되어 대량살상무기(WMD) 전용 우려가 인지된 경우 자의적인 수출이 금지됩니다.<br>👉 즉시 출하를 보류하고 정부(무역안보관리원)에 <strong>상황허가(Catch-All)</strong>를 신청하여 공식 승인을 받아야 합니다.</div>',
             dependsOn: { field: 'redFlagResult', value: ['의심 징후 발견 (상황허가 대상)'] }
           }
         ]
@@ -2335,7 +2335,7 @@ export const formDefinitions = {
     title: '포괄수출허가 이행 및 사후관리 대장',
     category: '수출심사 및 통보',
     indicator: '3.2.6 (별표 20: 포괄수출허가 이행 및 사후관리 대장 DB)',
-    legalBasis: '전략물자수출입고시 제28조(사용자포괄수출허가)·제34조(품목포괄수출허가), 제96조 제3항(최종사용자 서약서 제출 의무), 제86조(자율준수무역거래자 보고의무 - 별지 제19호 수출허가 실적보고)', // [수정] 제22조는 개별수출허가 심사기준 — 포괄수출허가 근거 아님
+    legalBasis: '전략물자수출입고시 제28조(사용자포괄수출허가)·제34조(품목포괄수출허가), 제96조 제3항(제22조제5항에 따라 허가받은 경우의 최종사용자 서약서 제출), 제86조(자율준수무역거래자 보고의무 - 별지 제19호 수출허가 실적보고)', // [수정] 제22조는 개별수출허가 심사기준 — 포괄수출허가 근거 아님
     timing: '포괄수출허가로 선적 시마다',
     author: '자율수출관리기구',
     retention: '5년 (제92조)',
@@ -2428,7 +2428,7 @@ export const formDefinitions = {
     title: '사전거래보고서 (별지 제16호)',
     category: '거래보고',
     indicator: '3.2.6, 7.1.1 (별표 20: 사전거래보고서)',
-    legalBasis: '전략물자수출입고시 제86조(보고)',
+    legalBasis: '전략물자수출입고시 제26조제1항 (허가면제 시 수출 전 사전거래보고서, 별지 제16호)',
     timing: '수출 전',
     author: '자율수출관리기구',
     retention: '5년',
@@ -2444,7 +2444,7 @@ export const formDefinitions = {
     title: '사후거래보고서 (별지 제16호의2)',
     category: '거래보고',
     indicator: '3.2.6, 7.1.1 (별표 20: 사후거래보고서)',
-    legalBasis: '전략물자수출입고시 제86조(보고)',
+    legalBasis: '전략물자수출입고시 제26조제1항 (허가면제 시 수출 후 3개월 이내 사후거래보고서, 별지 제16호의2)',
     timing: '수출 후',
     author: '자율수출관리기구',
     retention: '5년',
@@ -2642,7 +2642,7 @@ export const formDefinitions = {
           { key: 'licenseNo', label: '정부 발급 허가증 번호', type: 'text', placeholder: '예: 2026-개-00XXXX', default: '' },
           { key: 'issueDate', label: '발급 일자', type: 'date', default: '' },
           { key: 'expireDate', label: '유효기간 만료 일자', type: 'date', default: '', description: '💡 개별수출허가 유효기간은 발급일로부터 1년 (고시 제25조). 기간 내 수출 완료 필요.' },
-          { key: 'issuingAuthority', label: '발급 기관', type: 'select', options: ['', '산업통상자원부', '방위사업청', '원자력안전위원회', '기타'] },
+          { key: 'issuingAuthority', label: '발급 기관', type: 'select', options: ['', '산업통상부', '방위사업청', '원자력안전위원회', '기타'] },
           { key: 'licenseConditions', label: '허가 조건 (특이사항)', type: 'textarea', placeholder: '허가증에 명시된 특별 조건이 있을 경우 기재 (없으면 "해당 없음")' },
         ]
       },

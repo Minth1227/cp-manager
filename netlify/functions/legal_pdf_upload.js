@@ -3,11 +3,15 @@
 // Netlify Blobs 사이트 전체 저장소(배포와 무관하게 유지됨)에, 업로드 메타데이터는 Firestore에 둔다.
 import { getAdminDb } from './lib/firebaseAdmin.js';
 import { getLegalPdfStore } from './lib/legalPdfStore.js';
+import { requireAuth, ROLES, resolveBotToken } from './lib/requireAuth.js';
 
 export const handler = async function (event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
+
+  const authz = await requireAuth(event, ROLES.ADMINS);
+  if (!authz.ok) return authz.response;
 
   try {
     const { formId, filename, pdfBase64, uploadedBy } = JSON.parse(event.body || '{}');

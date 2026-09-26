@@ -65,6 +65,10 @@ export async function renderAdminView(container) {
           Bot Token과 채널 ID를 둘 다 입력해야 실제 파일이 올라가며, <strong>비어있으면 텍스트 알림만 전송됩니다.</strong>
           (Slack App을 만들고 <code>files:write</code> 권한의 Bot Token을 발급받아 입력하세요)
         </p>
+        <p style="color:var(--accent-red); font-size:0.85rem; margin:6px 0 10px;">
+          ⚠️ 보안: 이 칸에 저장한 토큰은 로그인한 모든 사용자가 읽을 수 있는 공용 데이터에 저장됩니다.
+          Netlify 환경변수 <code>SLACK_BOT_TOKEN</code>에 등록한 뒤 이 칸을 비우고 저장하십시오. 서버는 환경변수를 우선 사용합니다.
+        </p>
         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">
           <input type="password" id="slack-bot-token-input" class="form-input" placeholder="xoxb-..." style="flex:1; min-width:280px; padding:8px;" value="${getSlackBotToken()}" />
         </div>

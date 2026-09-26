@@ -3,13 +3,19 @@
 // files.getUploadURLExternal → (파일 바이트 POST) → files.completeUploadExternal 3단계를 그대로 구현한다.
 // Bot Token(xoxb-...)이 필요하며, 관리자 설정 화면에서 아직 토큰을 입력하지 않았다면 클라이언트 쪽에서
 // 이 함수를 호출하지 않고 텍스트 알림(webhook)만 보낸다.
+import { requireAuth, ROLES, resolveBotToken } from './lib/requireAuth.js';
+
 export const handler = async function (event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const authz = await requireAuth(event, ROLES.EDITORS);
+  if (!authz.ok) return authz.response;
+
   try {
-    const { botToken, channelId, filename, pdfBase64, message } = JSON.parse(event.body || '{}');
+    const { botToken: bodyBotToken, channelId, filename, pdfBase64, message } = JSON.parse(event.body || '{}');
+    const botToken = resolveBotToken(bodyBotToken);
 
     if (!botToken || !channelId || !filename || !pdfBase64) {
       return { statusCode: 400, body: JSON.stringify({ error: 'botToken, channelId, filename, pdfBase64가 모두 필요합니다.' }) };

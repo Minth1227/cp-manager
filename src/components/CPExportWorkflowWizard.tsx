@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ExportCaseState, evaluateScreeningStatus } from '../utils/complianceRuleEngine';
-///import { ExportCaseState, evaluateScreeningStatus, validateAndLoadDraft } from '../utils/complianceRuleEngine';///
+import { ExportCaseState, evaluateScreeningStatus, canRelease } from '../utils/complianceRuleEngine';
+import { getDesignatedCpGrade, LEGAL_REFERENCE, PENDING_LEGAL_CHECKS } from '../utils/legalBasis';
+import { getCompanyInfo, getTargetGrade, getExportCaseState, saveExportCaseState } from '../store.js';
 import { Step1Screening } from './steps/Step1Screening';
 import { Step2Classification } from './steps/Step2Classification';
 import { Step3DocumentList } from './steps/Step3DocumentList';
@@ -46,7 +47,7 @@ const INITIAL_STATE: ExportCaseState = {
   transaction: {
     isITT: false,
     isComponent: false,
-    isCP_AA: true,
+    isCP_AA: false, // 실제 지정 등급으로 매 렌더링 시 재계산됨
     isLicenseExempt: false,
     isRussiaBelarus: false,
     isPreReportChosen: false,
@@ -63,15 +64,22 @@ interface WizardProps {
 export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose }) => {
   const [state, setState] = useState<ExportCaseState>(() => {
     const activeId = txId || 'POP-2026-EX-0042';
-    const saved = localStorage.getItem(`draft_${activeId}`);
-    if (saved) {
-      return JSON.parse(saved);
+    // 공유 저장소(Firestore)와 이 브라우저의 임시 저장본 중 더 최근 것을 사용한다.
+    // (종전에는 브라우저 localStorage에만 저장되어 다른 PC·담당자가 볼 수 없고 5년 보관이 보장되지 않았음)
+    let local: ExportCaseState | null = null;
+    let shared: ExportCaseState | null = null;
+    try { const raw = localStorage.getItem(`draft_${activeId}`); if (raw) local = JSON.parse(raw); } catch (e) { /* ignore */ }
+    try { const st = getExportCaseState(activeId) as ExportCaseState; if (st && st.screening) shared = st; } catch (e) { /* ignore */ }
+    const newer = [local, shared].filter(Boolean).sort((a, b) =>
+      new Date((b as ExportCaseState).updatedAt || 0).getTime() - new Date((a as ExportCaseState).updatedAt || 0).getTime())[0];
+    if (newer) {
+      return { ...INITIAL_STATE, ...(newer as ExportCaseState), id: activeId };
     }
 
     // We cannot use require in Vite. We will use static import at the top of the file.
     // Or we can just get data from localStorage directly since store.js saves to localStorage.
     // store.js uses `localStorage.getItem('cp_transactions')`.
-    let initial = { ...INITIAL_STATE, id: activeId };
+    let initial: ExportCaseState = { ...JSON.parse(JSON.stringify(INITIAL_STATE)), id: activeId };
     try {
       const rawTxs = localStorage.getItem('cp_transactions');
       if (rawTxs) {
@@ -110,8 +118,17 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
   const [isSuccess, setIsSuccess] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
+  // 실제 지정 등급 (목표 등급이 아님). 지정서 번호·지정일이 등록되고 유효기간(3년) 이내일 때만 특례 적용.
+  const designatedGrade = getDesignatedCpGrade(getCompanyInfo(), getTargetGrade());
+  const effectiveState: ExportCaseState = {
+    ...state,
+    transaction: { ...state.transaction, isCP_AA: designatedGrade === 'AA' || designatedGrade === 'AAA' },
+  };
+  const setEffectiveState = (next: ExportCaseState) =>
+    setState({ ...next, transaction: { ...next.transaction, isCP_AA: designatedGrade === 'AA' || designatedGrade === 'AAA' } });
+
   // Re-evaluate on every render to enforce strict logic blocking
-  const { isBlocked } = evaluateScreeningStatus(state.screening, state.destination);
+  const { isBlocked, isIncomplete } = evaluateScreeningStatus(state.screening, state.destination);
 
   // [#6] isBlocked ↔ status: STOP_SHIPMENT 자동 동기화
   React.useEffect(() => {
@@ -122,11 +139,16 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
     }
   }, [isBlocked]);
 
-  const saveDraft = () => {
-    const newState = { ...state, updatedAt: new Date().toISOString() };
+  const saveDraft = async () => {
+    const newState = { ...effectiveState, updatedAt: new Date().toISOString() };
     setState(newState);
     localStorage.setItem(`draft_${state.id}`, JSON.stringify(newState));
-    showToast("💾 임시 저장이 완료되었습니다. (Draft Saved)");
+    try {
+      await saveExportCaseState(state.id, newState);
+      showToast("💾 저장되었습니다. (공유 저장소 반영)");
+    } catch (e) {
+      showToast("⚠️ 이 브라우저에만 임시 저장되었습니다. 공유 저장소 저장에 실패했습니다.");
+    }
   };
 
   const loadDraft = () => {
@@ -149,6 +171,10 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
       showToast("⛔ 출하 보류(STOP-SHIPMENT) 상태에서는 다음 단계로 이동할 수 없습니다.");
       return;
     }
+    if (isIncomplete && step > 1) {
+      showToast("⛔ YESTRADE 우려거래자 조회를 완료해야 다음 단계로 이동할 수 있습니다.");
+      return;
+    }
     setCurrentStep(step);
   };
 
@@ -160,11 +186,16 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
-  const submitFinal = () => {
-    if (isBlocked) {
-      showToast("⛔ 출하 보류(STOP-SHIPMENT) 상태입니다. 승인이 불가합니다.");
+  const submitFinal = async () => {
+    const check = canRelease(effectiveState);
+    if (!check.ok) {
+      showToast("⛔ 승인 불가: " + check.reasons[0]);
       return;
     }
+    const released = { ...effectiveState, status: 'RELEASED' as const, updatedAt: new Date().toISOString() };
+    setState(released);
+    localStorage.setItem(`draft_${state.id}`, JSON.stringify(released));
+    try { await saveExportCaseState(state.id, released); } catch (e) { /* 화면 안내는 아래 */ }
     setIsSuccess(true);
   };
 
@@ -172,8 +203,8 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-slate-50">
         <CheckCircle className="w-24 h-24 text-emerald-500 mb-6" />
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Export Approved & License Dispatched</h1>
-        <p className="text-slate-600 mb-8 font-medium">성공적으로 허가 및 출하 승인이 완료되었습니다. 연계 서류가 정부 포털로 전송됩니다.</p>
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">사내 출하 승인 완료</h1>
+        <p className="text-slate-600 mb-8 font-medium">사내 출하 승인이 기록되었습니다. 정부 허가 신청·보고는 이 시스템에서 자동 전송되지 않으므로 YESTRADE에서 별도로 진행하십시오.</p>
         <button
           onClick={() => window.location.reload()}
           className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md font-bold transition-colors"
@@ -205,6 +236,9 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
               {isBlocked ? 'STOP-SHIPMENT' : (state.status === 'DRAFT' ? '작성 중 (초안)' : state.status)}
             </span>
             <span className="text-slate-500 font-medium">최종 저장: {new Date(state.updatedAt).toLocaleTimeString()}</span>
+            <span className={`px-2 py-0.5 rounded border ${designatedGrade === 'NONE' ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+              CP 지정 등급: {designatedGrade === 'NONE' ? '미지정 (특례 미적용)' : designatedGrade}
+            </span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -239,7 +273,7 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
               const stepNum = step.num;
               const isActive = currentStep === stepNum;
               const isCompleted = currentStep > stepNum;
-              const isDisabled = isBlocked && stepNum > 1;
+              const isDisabled = (isBlocked || isIncomplete) && stepNum > 1;
 
               return (
                 <div
@@ -267,12 +301,21 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
           </div>
         </div>
 
+        {!LEGAL_REFERENCE.currentNoticeVerified && (
+          <div className="mb-6 p-4 rounded-lg border border-amber-300 bg-amber-50 text-xs text-amber-800">
+            <p className="font-bold mb-1">법령 기준 안내: 이 화면의 판단 로직은 {LEGAL_REFERENCE.baseNotice} 원문 기준입니다. 현행 {LEGAL_REFERENCE.currentNotice}와의 대조가 끝나지 않았습니다.</p>
+            <ul className="list-disc list-inside space-y-0.5">
+              {PENDING_LEGAL_CHECKS.map(item => <li key={item}>{item}</li>)}
+            </ul>
+          </div>
+        )}
+
         {/* MAIN CONTENT AREA */}
         <main className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-          {currentStep === 1 && <Step1Screening state={state} onChange={setState} />}
-          {currentStep === 2 && <Step2Classification state={state} onChange={setState} />}
-          {currentStep === 3 && <Step3DocumentList state={state} onChange={setState} />}
-          {currentStep === 4 && <Step4ReleaseApproval state={state} onChange={setState} />}
+          {currentStep === 1 && <Step1Screening state={effectiveState} onChange={setEffectiveState} />}
+          {currentStep === 2 && <Step2Classification state={effectiveState} onChange={setEffectiveState} />}
+          {currentStep === 3 && <Step3DocumentList state={effectiveState} onChange={setEffectiveState} />}
+          {currentStep === 4 && <Step4ReleaseApproval state={effectiveState} onChange={setEffectiveState} />}
         </main>
       </div>
 
@@ -294,8 +337,8 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
           {currentStep < 4 ? (
             <button
               onClick={nextStep}
-              disabled={isBlocked}
-              className={`flex items-center gap-2 px-8 py-2.5 rounded-lg font-bold transition-all shadow-sm ${isBlocked
+              disabled={isBlocked || isIncomplete}
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-lg font-bold transition-all shadow-sm ${(isBlocked || isIncomplete)
                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-70'
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
                 }`}

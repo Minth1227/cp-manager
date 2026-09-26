@@ -1,11 +1,53 @@
 rules_version = '2';
+// 운영용 Firestore 보안 규칙.
+// (종전 파일은 "모두 허용(if true)" 에뮬레이터 전용 규칙이었음)
+// ⚠️ 배포 전 REPLACE_WITH_ADMIN_EMAIL 을 .env 의 VITE_ADMIN_EMAIL 과 같은 주소로 바꾸십시오.
+//
+// 한계: 앱 데이터가 system/globalState 한 문서에 모여 있고, 일반 직원도 규정 열람 기록을
+// 그 문서에 쓰기 때문에 "승인된 사용자"에게 쓰기를 허용한다. 문서·대장을 컬렉션으로 분리하는
+// 데이터 구조 개편 후 역할별 쓰기 규칙으로 좁혀야 한다.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // TEMPORARY: emulator-only, permissive rules for local UX testing.
-    // This file is NOT deployed anywhere in this session; it only governs
-    // the local Firestore emulator process. Do not deploy this to production.
+    function signedIn() { return request.auth != null; }
+    function hasProfile() { return exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function role() {
+      return hasProfile() ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : 'NONE';
+    }
+    function approved() { return signedIn() && role() in ['Master', 'ADMIN', 'EDITOR', 'Reviewer', 'VIEWER', 'General']; }
+    function admin() { return signedIn() && role() in ['Master', 'ADMIN']; }
+    function bootstrapAdmin() {
+      return signedIn() && request.auth.token.email == 'REPLACE_WITH_ADMIN_EMAIL';
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || admin());
+      // 본인 가입은 PENDING으로만 생성 가능 (지정된 관리자 이메일만 Master로 생성 가능)
+      allow create: if signedIn() && request.auth.uid == uid
+        && (request.resource.data.role == 'PENDING'
+            || (bootstrapAdmin() && request.resource.data.role == 'Master'));
+      // 본인은 역할(role)을 바꾸지 않는 범위에서만 수정 가능. 역할 변경은 관리자만.
+      allow update: if admin()
+        || (signedIn() && request.auth.uid == uid && request.resource.data.role == resource.data.role);
+      allow delete: if admin();
+    }
+
+    match /system/{docId} {
+      allow read, write: if approved();
+    }
+
+    match /formData/{docId} {
+      allow read, write: if approved();
+    }
+
+    // 문서번호(PSR) 채번 카운터: 증가만 허용
+    match /counters/{counterId} {
+      allow read: if approved();
+      allow create: if approved() && request.resource.data.last == 1;
+      allow update: if approved() && request.resource.data.last == resource.data.last + 1;
+    }
+
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

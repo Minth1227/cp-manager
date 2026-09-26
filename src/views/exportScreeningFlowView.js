@@ -134,7 +134,7 @@ export function renderExportScreeningFlowView(container, onNavigateToForm) {
         </table>
       </div>
       <p style="color:var(--text-tertiary); font-size:0.78rem; margin-top:14px; line-height:1.6;">
-        ※ "상업송장(CI)·포장명세서(PL)"만 요구되는 케이스: 전략물자가 아니고 위험 조건도 없는 완전한 일반 품목은 산업통상부·전략물자관리원의
+        ※ "상업송장(CI)·포장명세서(PL)"만 요구되는 케이스: 전략물자가 아니고 위험 조건도 없는 완전한 일반 품목은 산업통상부·무역안보관리원의
         별도 수출허가(라이선스)가 필요 없이 관세청 일반 수출신고(관세법 제241조)만 거칩니다. 이때 기본으로 요구되는 무역서류가
         상업송장과 포장명세서이며, 이 두 서류만 있으면 전략물자 관련 서류 요구 없이 통관·출고가 승인됩니다.
       </p>

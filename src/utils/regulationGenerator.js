@@ -2,7 +2,7 @@ import { getFormData, getCompanyInfo, getFormInstances } from '../store.js';
 
 /**
  * 자율수출관리규정 전문 생성 및 서식 실시간 동기화 엔진
- * 산업통상자원부 전략물자수출입고시 [별표 7] 표준자율수출관리규정 및 [AA등급 유형2 심사기준] 반영
+ * 산업통상부 전략물자수출입고시 [별표 7] 표준자율수출관리규정 및 [AA등급 유형2 심사기준] 반영
  */
 export function generateSynchronizedRegulation() {
   const compInfo = getCompanyInfo() || {};
@@ -114,7 +114,7 @@ export function generateSynchronizedRegulation() {
         </h3>
         
         <p><strong>제1조 (목적)</strong><br>
-        본 규정은 국제평화 및 안전유지와 국가안보에 대한 위해를 예방하기 위해 「대외무역법」 및 산업통상자원부 「전략물자수출입고시」에 따라 <span data-reg-field="companyName">${companyName}</span>(이하 "당사"라 한다)의 자율준수체제를 구축하고 그 세부 운영에 필요한 사항을 규정함을 목적으로 한다.</p>
+        본 규정은 국제평화 및 안전유지와 국가안보에 대한 위해를 예방하기 위해 「대외무역법」 및 산업통상부 「전략물자수출입고시」에 따라 <span data-reg-field="companyName">${companyName}</span>(이하 "당사"라 한다)의 자율준수체제를 구축하고 그 세부 운영에 필요한 사항을 규정함을 목적으로 한다.</p>
 
         <p><strong>제2조 (기본방침)</strong> <span class="sync-badge" style="font-size:0.75rem; background:rgba(99,102,241,0.1); color:var(--accent-purple); padding:2px 8px; border-radius:4px; font-weight:600;">[별표 7 준거]</span><br>
         ① 당사는 대외무역법 등 관계 법령을 준수하며, 어떠한 경우에도 정부의 적법한 허가 없이 전략물자 및 상황허가 대상 품목을 수출하지 않는다.<br>
@@ -175,7 +175,7 @@ export function generateSynchronizedRegulation() {
 
         <p><strong>제9조 (전략물자 판정 등)</strong> <span class="sync-badge" style="font-size:0.75rem; background:rgba(34,197,94,0.1); color:var(--accent-green); padding:2px 8px; border-radius:4px; font-weight:600;">[F-01 ~ F-04 연동됨]</span><br>
         ① 연구소 및 기술개발 부서는 신규 품목 및 소프트웨어가 개발·변경되거나 수출이 계획되는 경우, 수출 이행 이전에 자율수출관리기구에 판정을 의뢰하여야 한다.<br>
-        ② 판정 담당자는 산업통상자원부 [별표 2] 통제리스트 및 바세나르체제(WA) 기준에 따라 엄격한 자가판정(F-01)을 수행하며, 모호한 품목은 무역안보관리원 앞 전문판정(F-02)을 신청한다.<br>
+        ② 판정 담당자는 산업통상부 [별표 2] 통제리스트 및 바세나르체제(WA) 기준에 따라 엄격한 자가판정(F-01)을 수행하며, 모호한 품목은 무역안보관리원 앞 전문판정(F-02)을 신청한다.<br>
         ③ 판정 결과 및 기술사양 분석서(F-03/04)는 전산 시스템에 영구 DB화하여 관리한다.</p>
 
         <p><strong>제10조 (신규 거래처 사전 통보 및 3단계 거래심사)</strong> <span class="sync-badge" style="font-size:0.75rem; background:rgba(156,163,175,0.15); color:var(--text-tertiary); padding:2px 8px; border-radius:4px; font-weight:600;" title="G-01은 거래 건별로 작성되어 규정 화면에 대표값이 없습니다">[절차 근거: G-01 / G-02]</span><br>
@@ -187,7 +187,7 @@ export function generateSynchronizedRegulation() {
 
         <p><strong>제11조 (수출허가의 신청 및 관리)</strong> <span class="sync-badge" style="font-size:0.75rem; background:rgba(34,197,94,0.1); color:var(--accent-green); padding:2px 8px; border-radius:4px; font-weight:600;">[G-03 / I-01 연동됨]</span><br>
         ① 전략물자 또는 상황허가 대상 품목으로 판정된 건은 허가 취득 전까지 어떠한 경우에도 출하·선적할 수 없다.<br>
-        ② 자율수출관리기구는 산업통상자원부장관 등의 개별수출허가 또는 CP 특례에 따른 포괄수출허가를 취득하고, 그 이력을 수출허가 관리대장(G-03) 및 사후관리대장(I-01)에 기록·관리한다.</p>
+        ② 자율수출관리기구는 산업통상부장관 등의 개별수출허가 또는 CP 특례에 따른 포괄수출허가를 취득하고, 그 이력을 수출허가 관리대장(G-03) 및 사후관리대장(I-01)에 기록·관리한다.</p>
 
         <p><strong>제12조 (전략물자 국내거래 시 사전 통보 절차)</strong> <span class="sync-badge" style="font-size:0.75rem; background:rgba(34,197,94,0.1); color:var(--accent-green); padding:2px 8px; border-radius:4px; font-weight:600;">[E-01 / E-02 연동됨]</span><br>
         ① 국내 거래라 하더라도 당사의 전략물자 또는 통제 소프트웨어가 국내 거래처를 거쳐 제3국으로 불법 재수출되는 것을 방지하기 위하여, 당사는 국내 거래처에 해당 품목이 전략물자임을 사전에 명문화하여 통보(E-01)한다. (현재까지 발행된 국내거래 통보서 <span data-reg-field="e01Count">${e01Count}</span>건)<br>
@@ -247,7 +247,7 @@ export function generateSynchronizedRegulation() {
 
         <p><strong>제18조 (위반사항의 신속 보고 및 자진신고)</strong> <span class="sync-badge" style="font-size:0.75rem; background:rgba(34,197,94,0.1); color:var(--accent-green); padding:2px 8px; border-radius:4px; font-weight:600;">[J-01 / J-02 연동됨]</span><br>
         ① 임직원은 대외무역법 또는 본 규정의 위반 사실이나 위반 우려를 인지한 즉시 자율수출관리기구의 장에게 보고하여야 한다.<br>
-        ② 기구장은 위반 사실 확인 시 즉각적인 거래 중단 및 시정조치를 취함과 동시에, 산업통상자원부장관 앞 공식 「자진신고서(J-01)」 및 「재발방지계획서(J-02)」를 제출하여 법적 리스크를 최소화한다. (현재까지 자진신고 <span data-reg-field="j01Count">${j01Count}</span>건 — 0건은 위반사항이 없었다는 뜻이다)</p>
+        ② 기구장은 위반 사실 확인 시 즉각적인 거래 중단 및 시정조치를 취함과 동시에, 산업통상부장관 앞 공식 「자진신고서(J-01)」 및 「재발방지계획서(J-02)」를 제출하여 법적 리스크를 최소화한다. (현재까지 자진신고 <span data-reg-field="j01Count">${j01Count}</span>건 — 0건은 위반사항이 없었다는 뜻이다)</p>
         
         <p><strong>제19조 (벌칙 및 인사규정 연계)</strong> <span class="sync-badge" style="font-size:0.75rem; background:rgba(34,197,94,0.1); color:var(--accent-purple); padding:2px 8px; border-radius:4px; font-weight:600;">[인사규정 연계]</span><br>
         고의 또는 중대한 과실로 본 규정 및 수출통제 법령을 위반하여 회사에 손해를 끼치거나 불법 수출에 연루된 자는 당사 취업규칙 및 인사규정 징계 기준에 따라 엄중 문책(감봉, 정직, 해고 등) 및 구상권 청구의 대상이 된다.</p>

@@ -1,9 +1,14 @@
 // Using Node 18+ native fetch
+import { requireAuth, ROLES, resolveBotToken } from './lib/requireAuth.js';
+
 export const handler = async function(event, context) {
   // Only allow POST
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
+
+  const authz = await requireAuth(event, ROLES.EDITORS);
+  if (!authz.ok) return authz.response;
 
   try {
     const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;

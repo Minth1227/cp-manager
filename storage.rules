@@ -1,13 +1,29 @@
 rules_version = '2';
+// 운영용 Storage 보안 규칙. (종전 파일은 "모두 허용" 에뮬레이터 전용 규칙이었음)
+// 승인된 사용자만 첨부파일을 읽고 올릴 수 있다. 25MB 초과 업로드 차단.
 service firebase.storage {
   match /b/{bucket}/o {
-    // TEMPORARY: emulator-only, permissive rules for local UX testing.
-    // This file is NOT deployed anywhere in this session; it only governs
-    // the local Storage emulator process. Do not deploy this to production
-    // as-is — real deployment should restrict writes to authenticated users
-    // (e.g. request.auth != null) before connecting a live Storage bucket.
+    function approved() {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role
+           in ['Master', 'ADMIN', 'EDITOR', 'Reviewer', 'VIEWER', 'General'];
+    }
+    function editor() {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role
+           in ['Master', 'ADMIN', 'EDITOR', 'Reviewer'];
+    }
+
+    match /attachments/{allPaths=**} {
+      allow read: if approved();
+      allow create, update: if editor() && request.resource.size < 25 * 1024 * 1024;
+      // 보관의무 문서 보호: 삭제는 관리자(Master/ADMIN)만
+      allow delete: if request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['Master', 'ADMIN'];
+    }
+
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

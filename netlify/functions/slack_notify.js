@@ -2,10 +2,15 @@
 // 브라우저에서 hooks.slack.com으로 직접 fetch하면 CORS로 막힐 수 있어 서버(Netlify Function)에서 대신 전송한다.
 // webhookUrl은 관리자 설정 화면에서 Firestore(system/globalState.integrations.slackWebhookUrl)에 저장된 값을
 // 클라이언트가 그대로 실어 보낸다 — 아직 주소가 비어있으면 클라이언트 쪽(slackNotify.js)에서 이 함수를 호출하지 않는다.
+import { requireAuth, ROLES, resolveBotToken } from './lib/requireAuth.js';
+
 export const handler = async function (event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
+
+  const authz = await requireAuth(event, ROLES.APPROVED);
+  if (!authz.ok) return authz.response;
 
   try {
     const { webhookUrl, payload } = JSON.parse(event.body || '{}');

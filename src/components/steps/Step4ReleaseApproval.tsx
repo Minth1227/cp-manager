@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExportCaseState, computeEccn, evaluateScreeningStatus } from '../../utils/complianceRuleEngine';
+import { ExportCaseState, computeEccn, evaluateScreeningStatus, canRelease } from '../../utils/complianceRuleEngine';
 import { Send, AlertTriangle, ShieldCheck, PenTool, XCircle, RefreshCw, FolderOpen, Save } from 'lucide-react';
 
 interface Props {
@@ -11,6 +11,9 @@ export const Step4ReleaseApproval: React.FC<Props> = ({ state, onChange }) => {
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const isConflictOfInterest = state.salesManagerId === state.complianceManagerId;
   const { isUsEarSubject } = computeEccn(state.classification);
+  const releaseCheck = canRelease(state);
+  const setChecklist = (field: 'documentsMatch' | 'transferControlled', value: boolean) =>
+    onChange({ ...state, releaseChecklist: { ...(state.releaseChecklist || {}), [field]: value } });
 
   const handleOverrideChange = (val: string) => {
     onChange({
@@ -29,7 +32,7 @@ export const Step4ReleaseApproval: React.FC<Props> = ({ state, onChange }) => {
 
   const handleResync = () => {
     // 2차 검토 후 역동기화(Re-sync): 실제로는 바뀐 국가/바이어를 상태에 반영하고 룰 엔진 재구동
-    const { isBlocked } = evaluateScreeningStatus(state.screening);
+    const { isBlocked } = evaluateScreeningStatus(state.screening, state.destination);
     if (isBlocked) {
       alert("⚠️ [역동기화 결과] 신규 위험이 감지되었습니다. STOP-SHIPMENT가 다시 가동되며 1단계로 강제 회귀합니다.");
       handleStatusChange('STOP_SHIPMENT');
@@ -111,10 +114,10 @@ export const Step4ReleaseApproval: React.FC<Props> = ({ state, onChange }) => {
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
               <div>
-                <h4 className="text-sm font-bold text-red-800">미국 상무부(DOC) 수출허가증(License) 확인 필수</h4>
+                <h4 className="text-sm font-bold text-red-800">미국 EAR 검토 결과 확인</h4>
                 <p className="text-xs text-red-700 mt-1">
-                  이 품목은 US EAR 0% De minimis 규정의 통제를 받는 품목(5D002)입니다. 
-                  Must obtain US Dept of Commerce license. H-01 검증 전 미국 정부에서 발급한 라이선스를 확인하십시오.
+                  미국산 암호 코드가 포함된 건입니다. 미국 재수출 규정 검토 메모(US-EAR)의 결론을 확인한 뒤 출하하십시오.
+                  한국 수출허가·판정 절차는 이와 별도로 완료되어야 합니다.
                 </p>
               </div>
             </div>
@@ -128,12 +131,16 @@ export const Step4ReleaseApproval: React.FC<Props> = ({ state, onChange }) => {
           </h3>
           <div className="space-y-3">
             <label className="flex items-center gap-2 text-sm text-slate-600">
-              <input type="checkbox" className="rounded text-indigo-600" />
-              수출허가증 원본 상의 품목, 수량, 목적지가 상업송장과 100% 일치합니까?
+              <input type="checkbox" className="rounded text-indigo-600"
+                checked={!!state.releaseChecklist?.documentsMatch}
+                onChange={e => setChecklist('documentsMatch', e.target.checked)} />
+              판정서·허가서(해당 시)·계약서·송장의 품목, 버전·수량, 목적지, 최종사용자가 서로 일치합니까? ([별표 20] 4.1.2)
             </label>
             <label className="flex items-center gap-2 text-sm text-slate-600">
-              <input type="checkbox" className="rounded text-indigo-600" />
-              배포 방식(무형이전, USB 등)이 보안 규정에 따라 암호화 처리되었습니까?
+              <input type="checkbox" className="rounded text-indigo-600"
+                checked={!!state.releaseChecklist?.transferControlled}
+                onChange={e => setChecklist('transferControlled', e.target.checked)} />
+              승인된 전달 경로·수신자·접근 기간으로 전달하고 전달기록을 남깁니까?
             </label>
           </div>
         </div>
@@ -199,7 +206,7 @@ export const Step4ReleaseApproval: React.FC<Props> = ({ state, onChange }) => {
                       checked={!!state.adminOverrideReason}
                       onChange={e => handleOverrideChange(e.target.checked ? '예외 승인 진행' : '')}
                     />
-                    Admin Override 예외 승인 적용
+                    예외 승인 적용 (사유 필수)
                   </label>
                   <textarea 
                     placeholder="오버라이드 사유 기재 (예: 야간 당직, 대체 인력 부재 등)"
@@ -229,13 +236,19 @@ export const Step4ReleaseApproval: React.FC<Props> = ({ state, onChange }) => {
               임시 저장 (Draft)
             </button>
             <button 
-              onClick={() => handleStatusChange('RELEASED')}
-              className="px-6 py-2.5 bg-emerald-600 text-white font-bold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-2"
+              disabled={!releaseCheck.ok}
+              onClick={() => { if (releaseCheck.ok) handleStatusChange('RELEASED'); }}
+              className="px-6 py-2.5 bg-emerald-600 text-white font-bold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               최종 승인 및 배포 완료
             </button>
           </div>
         </div>
+        {!releaseCheck.ok && (
+          <ul className="mt-3 text-xs text-red-700 list-disc list-inside space-y-0.5">
+            {releaseCheck.reasons.map(r => <li key={r}>{r}</li>)}
+          </ul>
+        )}
       </div>
 
       {/* Emergency API Trigger */}

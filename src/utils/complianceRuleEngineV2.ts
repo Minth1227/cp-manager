@@ -1,3 +1,6 @@
+// 주의: 등급별 제출/사내보관 구분은 [별표 19] 특례를 단순화한 사내 안내용이다.
+// cpGrade는 호출부(logic.js)에서 실제 지정 등급으로 상한을 둔다. 수출자 서약서(L-10)는
+// 현행 고시(제2026-101호)에서 삭제되었다는 보도가 있어 원문 대조 후 정리가 필요하다.
 export type CPGrade = 'NONE' | 'A' | 'AA' | 'AAA';
 export type ExportRoute = 'GENERAL' | 'CATCH_ALL' | 'INDIVIDUAL' | 'USER_COMPREHENSIVE' | 'ITEM_USER_COMPREHENSIVE' | 'TOP_TIER_COMPREHENSIVE' | 'BLOCKED';
 

@@ -263,7 +263,7 @@ export const auditMatrixData = [
     subCategory: '5.1 교육 계획 및 실적',
     indicatorNo: '5.1.2',
     indicatorTitle: '내부 교육 시행방법 및 증빙이 완비되어 있는가?',
-    aaCriteria: '전략물자관리원 교육 수료증 또는 자체 교육 출석부, 결과보고서 및 교육 교재를 편철 보관해야 함.',
+    aaCriteria: '무역안보관리원 교육 수료증 또는 자체 교육 출석부, 결과보고서 및 교육 교재를 편철 보관해야 함.',
     forms: [
       { id: 'C-02', title: '사내교육 출석부' },
       { id: 'C-03', title: '사내교육 결과보고서' }
@@ -323,7 +323,7 @@ export const auditMatrixData = [
     subCategory: '8.1 보고 및 벌칙',
     indicatorNo: '8.1.1',
     indicatorTitle: '위반사항에 대한 내·외부 보고 절차가 구체적으로 명문화되어 있는가?',
-    aaCriteria: '사내 규정에 위반 시 기구장 보고 ➡️ 산업통상자원부 자진신고 절차가 구체화되어 있고 인사규정 징계 기준과 연계되어 있어야 함.',
+    aaCriteria: '사내 규정에 위반 시 기구장 보고 ➡️ 산업통상부 자진신고 절차가 구체화되어 있고 인사규정 징계 기준과 연계되어 있어야 함.',
     forms: [
       { id: 'J-01', title: '자진신고서' },
       { id: 'J-02', title: '재발방지 계획서' },

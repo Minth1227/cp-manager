@@ -8,19 +8,24 @@ import { getAdminDb } from './lib/firebaseAdmin.js';
 import { generateSignedDocumentPdf } from './lib/signedPdf.js';
 import { buildPdfFieldsForForm } from './lib/formPdfFields.js';
 import { shareSlackFile } from './lib/slackFileShare.js';
+import { requireAuth, ROLES, resolveBotToken } from './lib/requireAuth.js';
 
 export const handler = async function (event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const authz = await requireAuth(event, ROLES.APPROVED);
+  if (!authz.ok) return authz.response;
+
   try {
     const {
-      botToken, approverSlackUserId,
+      botToken: bodyBotToken, approverSlackUserId,
       title, detail, link,
       formId, storageKey, approverRoleLabel,
       requesterEmail, requesterName, requesterSlackUserId, visibilityScope, previewPdfBase64
     } = JSON.parse(event.body || '{}');
+    const botToken = resolveBotToken(bodyBotToken);
 
     if (!botToken || !botToken.startsWith('xoxb-')) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Slack Bot Token(xoxb-...)이 필요합니다.' }) };

@@ -117,9 +117,9 @@ export const cpSampleDummyData = {
         { no: 7, name: '강감사', dept: '감사실', role: '내부감사 담당자', courseName: '자율준수무역거래자', courseDate: '2025-08-22', courseNumber: 'KOSTI-CP-2025-0290', institution: '한국무역안보관리원' }
       ],
       workshops: [
-        { no: 1, name: '박전략', dept: '전략기획실 / 상무', roleType: '대표이사 / 임원급(기구장)', workshopTitle: '2024년 상반기 무역안보의 날 부대 워크숍', attendDate: '2024-07-03', institution: '산업통상자원부 / KOSTI', evidence: '참석확인증 사본 (보관)' },
-        { no: 2, name: '이무역', dept: '해외영업팀 / 대리', roleType: '실무 담당자', workshopTitle: '2024년 하반기 자율준수무역거래자 정례 워크숍', attendDate: '2024-11-15', institution: '산업통상자원부 / KOSTI', evidence: '수료증 및 참석사진' },
-        { no: 3, name: '박전략', dept: '전략기획실 / 상무', roleType: '대표이사 / 임원급(기구장)', workshopTitle: '2025년 상반기 무역안보의 날 부대 워크숍', attendDate: '2025-07-09', institution: '산업통상자원부 / KOSTI', evidence: '참석확인증 사본 (보관)' }
+        { no: 1, name: '박전략', dept: '전략기획실 / 상무', roleType: '대표이사 / 임원급(기구장)', workshopTitle: '2024년 상반기 무역안보의 날 부대 워크숍', attendDate: '2024-07-03', institution: '산업통상부 / KOSTI', evidence: '참석확인증 사본 (보관)' },
+        { no: 2, name: '이무역', dept: '해외영업팀 / 대리', roleType: '실무 담당자', workshopTitle: '2024년 하반기 자율준수무역거래자 정례 워크숍', attendDate: '2024-11-15', institution: '산업통상부 / KOSTI', evidence: '수료증 및 참석사진' },
+        { no: 3, name: '박전략', dept: '전략기획실 / 상무', roleType: '대표이사 / 임원급(기구장)', workshopTitle: '2025년 상반기 무역안보의 날 부대 워크숍', attendDate: '2025-07-09', institution: '산업통상부 / KOSTI', evidence: '참석확인증 사본 (보관)' }
       ]
     },
     'C-00': {

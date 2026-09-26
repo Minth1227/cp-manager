@@ -1,5 +1,6 @@
 import React from 'react';
-import { ExportCaseState, evaluateScreeningStatus } from '../../utils/complianceRuleEngine';
+import { ExportCaseState, evaluateScreeningStatus, resolveDestination } from '../../utils/complianceRuleEngine';
+import { regionLabel } from '../../utils/legalBasis';
 import { DESTINATION_COUNTRIES } from '../../utils/countryList';
 import { AlertTriangle, ShieldAlert, CheckCircle, Search, FileText, Upload, Lock, Unlock, XCircle } from 'lucide-react';
 
@@ -68,21 +69,12 @@ export const Step1Screening: React.FC<Props> = ({ state, onChange }) => {
     }, 1500);
   };
 
+  // [별표 6] 수출지역 구분은 legalBasis.ts 단일 원천으로 판단한다.
+  // (종전: countryList의 B2 그룹에 나의1·나의2가 섞여 중국·베트남 등 나의1 국가까지 "제재국"으로 차단됨)
   const handleDestinationChange = (name: string) => {
-    const country = DESTINATION_COUNTRIES.find(c => c.name === name);
-    
-    // Even if not found in list (user typed random text), we keep the text in state.
-    // If not found, it is treated as general country (Not Group A, Not Sanctioned)
-    const isGroupA = country?.group === 'A';
-    const isSanctionedCountry = country?.group === 'B2';
-
     onChange({
       ...state,
-      destination: {
-        countryCode: name,
-        isGroupA,
-        isSanctionedCountry
-      }
+      destination: resolveDestination(name)
     });
   };
 
@@ -208,20 +200,16 @@ export const Step1Screening: React.FC<Props> = ({ state, onChange }) => {
                     state.destination.isGroupA ? 'text-blue-800' :
                     'text-emerald-800'
                   }`}>
-                    해당 목적국은 {
-                      state.destination.isSanctionedCountry ? '국제 제재 대상국' :
-                      state.destination.isGroupA ? "'가' 지역 (Group A)" :
-                      "'나' 지역 (Group B)"
-                    }입니다.
+                    해당 목적국은 [별표 6] {regionLabel(state.destination.region || (state.destination.isGroupA ? 'A' : state.destination.isSanctionedCountry ? 'B2' : 'B1'))}입니다.
                   </h4>
                   <p className={`text-xs mt-1 ${
                     state.destination.isSanctionedCountry ? 'text-red-700' :
                     state.destination.isGroupA ? 'text-blue-700' :
                     'text-emerald-700'
                   }`}>
-                    {state.destination.isSanctionedCountry && '전략물자수출입고시 별표 3에 따른 제재국으로 수출이 원칙적으로 금지됩니다. (본 거래 건은 자동으로 STOP-SHIPMENT 처리됩니다)'}
-                    {state.destination.isGroupA && '수출 통제 체제에 가입된 신뢰 국가로, 허가 절차 및 서류가 대폭 면제되거나 간소화됩니다.'}
-                    {!state.destination.isGroupA && !state.destination.isSanctionedCountry && '일반 통제 국가입니다. 전략물자 여부에 따라 엄격한 개별허가 또는 상황허가가 요구될 수 있습니다.'}
+                    {state.destination.isSanctionedCountry && "나의2 지역은 서류면제·허가면제가 제한됩니다([별표 6] 제3호 등). 사내 기준에 따라 거래를 보류(STOP-SHIPMENT)하고 자율수출관리기구가 검토합니다."}
+                    {state.destination.isGroupA && "'가' 지역입니다. 물품(기술 제외)을 수출하는 경우 일부 허가 신청서류가 면제됩니다(고시 제21조①). 판정·우려거래자 확인은 그대로 필요합니다."}
+                    {!state.destination.isGroupA && !state.destination.isSanctionedCountry && '나의1 지역입니다. 전략물자 해당 여부와 의심징후에 따라 개별허가 또는 상황허가가 필요할 수 있습니다.'}
                   </p>
                 </div>
               </div>
@@ -256,13 +244,13 @@ export const Step1Screening: React.FC<Props> = ({ state, onChange }) => {
                 <Search className="w-4 h-4"/>
               )}
               
-              {isScanning ? '미국 상무부 제재 리스트(CSL) 실시간 검색 중...' : 
-               scanResult === 'HIT' || screening.cslApiHit ? 'US CSL API: 위반 적발 (클릭 시 재검색)' :
-               scanResult === 'SAFE' ? 'US CSL API: 통과 (일치 항목 없음)' :
-               'US CSL API 실시간 일괄 검색 시작'}
+              {isScanning ? '(모의) 키워드 점검 중...' : 
+               scanResult === 'HIT' || screening.cslApiHit ? '(모의) 위험 키워드 발견 — 보류' :
+               scanResult === 'SAFE' ? '(모의) 위험 키워드 없음 — 실제 조회를 대체하지 않음' :
+               '(모의) 상호명 위험 키워드 점검'}
             </button>
             <p className="text-xs text-slate-500">
-              * 입력하신 구매자, 최종수하인, 최종사용자, 대리인 총 4개 대상의 상호명을 미국 정부 CSL API에 실시간으로 대조합니다. ('제재', '우려', 'blacklist' 등의 키워드 포함 시 적발 시뮬레이션)
+              * 이 버튼은 실제 미국 CSL API를 조회하지 않는 <strong>모의 기능</strong>입니다 (상호명에 '제재', '우려' 등 키워드가 있으면 보류). 우려거래자 확인은 반드시 아래 YESTRADE 조회로 하십시오.
             </p>
           </div>
           
@@ -271,9 +259,17 @@ export const Step1Screening: React.FC<Props> = ({ state, onChange }) => {
               type="checkbox" 
               className="rounded text-indigo-600 focus:ring-indigo-500"
               checked={screening.yesTradeManualChecked}
-              onChange={e => handleScreeningChange('yesTradeManualChecked', e.target.checked)}
+              onChange={e => onChange({
+                ...state,
+                screening: {
+                  ...screening,
+                  yesTradeManualChecked: e.target.checked,
+                  yesTradeCheckedAt: e.target.checked ? new Date().toISOString() : undefined
+                }
+              })}
             />
-            한국 YesTrade 우려거래자 DB 대조 확인 완료 (체크 시 통과)
+            [필수] YESTRADE 우려거래자 조회 완료 — 구매자·최종수하인·최종사용자·대리인 전원 (조회 화면은 우려거래자 스크리닝 대장에 첨부)
+            {screening.yesTradeCheckedAt && <span className="text-xs text-slate-400 ml-2">조회 기록: {new Date(screening.yesTradeCheckedAt).toLocaleString()}</span>}
           </label>
         </div>
 
@@ -341,10 +337,19 @@ export const Step1Screening: React.FC<Props> = ({ state, onChange }) => {
                     <Upload className="w-6 h-6 text-amber-400 mx-auto mb-2" />
                     <p className="text-xs text-amber-700">여기를 클릭하여 수령한 EUC 파일을 업로드하세요.</p>
                   </div>
+                  <textarea
+                    placeholder="[필수] 소명 검토 의견 — 받은 서류, 확인한 사실, 의심징후가 해소된 근거"
+                    className="w-full text-sm p-2 border border-amber-300 rounded-md"
+                    rows={3}
+                    value={screening.dueDiligenceNote || ''}
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => handleScreeningChange('dueDiligenceNote', e.target.value)}
+                  />
                   <div className="flex justify-end pt-2 border-t border-amber-100">
                     <button 
+                      disabled={!(screening.dueDiligenceNote || '').trim()}
                       onClick={(e) => { e.stopPropagation(); handleScreeningChange('isDueDiligenceApproved', true); }}
-                      className="bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-amber-700 shadow-sm flex items-center gap-2"
+                      className="bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-amber-700 shadow-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Unlock className="w-4 h-4"/> [관리자] 소명 승인 및 Un-lock
                     </button>
@@ -364,12 +369,21 @@ export const Step1Screening: React.FC<Props> = ({ state, onChange }) => {
               </div>
               <p className="text-sm text-slate-600 ml-7">3단계 상황허가 패키지(L-03)를 가동하기 위해 대기합니다.</p>
               {screening.stopShipmentChoice === 'CATCH_ALL' && (
-                <div className="mt-4 ml-7">
+                <div className="mt-4 ml-7 space-y-2">
+                  <input
+                    type="text"
+                    placeholder="[필수] 상황허가 허가번호"
+                    className="w-full md:w-1/2 text-sm p-2 border border-purple-300 rounded-md"
+                    value={screening.catchAllLicenseNo || ''}
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => handleScreeningChange('catchAllLicenseNo', e.target.value)}
+                  />
                   <button 
+                    disabled={!(screening.catchAllLicenseNo || '').trim()}
                     onClick={(e) => { e.stopPropagation(); handleScreeningChange('isCatchAllApproved', true); }}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700 shadow-sm flex items-center gap-2"
+                    className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700 shadow-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <Unlock className="w-4 h-4"/> 정부 승인 완료 (강제 Un-lock)
+                    <Unlock className="w-4 h-4"/> 상황허가 취득 확인 (허가번호 기록 후 해제)
                   </button>
                 </div>
               )}

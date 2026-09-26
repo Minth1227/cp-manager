@@ -1,13 +1,19 @@
 // 워크스페이스의 활성 멤버 전원에게 개별 DM으로 공지 메시지를 보낸다.
 // Bot Token에 users:read, im:write, chat:write 세 스코프가 모두 있어야 동작한다.
 // 대상: is_bot=false, deleted=false, id!=='USLACKBOT'인 사람만 (봇/탈퇴계정/슬랙봇 제외).
+import { requireAuth, ROLES, resolveBotToken } from './lib/requireAuth.js';
+
 export const handler = async function (event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const authz = await requireAuth(event, ROLES.EDITORS);
+  if (!authz.ok) return authz.response;
+
   try {
-    const { botToken, message } = JSON.parse(event.body || '{}');
+    const { botToken: bodyBotToken, message } = JSON.parse(event.body || '{}');
+    const botToken = resolveBotToken(bodyBotToken);
     if (!botToken || !message) {
       return { statusCode: 400, body: JSON.stringify({ error: 'botToken과 message가 필요합니다.' }) };
     }

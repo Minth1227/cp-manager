@@ -3,6 +3,7 @@
 // Renders forms based on definitions
 // ============================================
 
+import { authFetch } from '../utils/authFetch.js';
 import {
   getFormData, setFormData, getFormStatus, setFormStatus, canEdit, getCompanyInfo, getTargetGrade,
   getProducts, getSelectedProductId, setSelectedProductId, addProduct, deleteProduct, updateProduct,
@@ -406,10 +407,10 @@ export function renderForm(formDef, container, overrideData = null) {
 
     if (formDef.id === 'K-03') {
       reasonType = isInitial ? '🌱 신규 신청 단계 법적 면제' : '정부 정기보고 미해당';
-      exemptionReason = `본 서식(별지 제18호)은 「대외무역법」 제25조 제3항 및 「전략물자 수출입고시」 제90조에 따라 이미 CP 자격을 취득한 기존 기업이 차년도에 전년도 운영실적을 산업통상자원부장관에게 정기 보고하는 양식입니다. 현재 <strong>[신규(최초) 지정신청 단계]</strong>에서는 기부여된 CP 지정번호가 없으므로 법적으로 작성이 면제(N/A)됩니다.`;
+      exemptionReason = `본 서식(별지 제18호)은 「대외무역법」 제22조제3항, 같은 법 시행령 제45조 및 「전략물자수출입고시」 제86조에 따라 이미 CP 자격을 취득한 기존 기업이 차년도에 전년도 운영실적을 산업통상부장관에게 정기 보고하는 양식입니다. 현재 <strong>[신규(최초) 지정신청 단계]</strong>에서는 기부여된 CP 지정번호가 없으므로 법적으로 작성이 면제(N/A)됩니다.`;
     } else if (formDef.id === 'K-04') {
       reasonType = isInitial ? '🌱 신규 신청 단계 법적 면제' : '정부 실적보고 미해당';
-      exemptionReason = `본 서식(별지 제19호)은 「전략물자 수출입고시」 제90조 제2항에 따라 포괄수출허가를 발급받은 기존 CP 기업이 실제 허가 사용 실적을 반기/연간 정기 보고하는 서식입니다. <strong>신규 신청 단계에서는 포괄수출허가증 발급 전</strong>이므로 법적으로 제출 대상에서 제외(N/A)됩니다.`;
+      exemptionReason = `본 서식(별지 제19호)은 「전략물자수출입고시」 제86조제1항제2호에 따라 지정받은 자율준수무역거래자가 수출허가·중개허가 및 판정 관련 실적을 보고하는 서식입니다(AA등급: 반기, [별표 19]). <strong>신규 신청 단계에서는 아직 지정 전</strong>이므로 제출 대상이 아닙니다.`;
     } else if (['M-01', 'M-02', 'M-03'].includes(formDef.id)) {
       reasonType = '⚡ Z-01 사전 진단표 연동 면제';
       const q0 = z01Data['q0_type'] || '수출';
@@ -1870,7 +1871,7 @@ function bindFormEvents(formDef, container) {
               <br/><br/><div style="font-size:0.85rem; padding:10px; background:rgba(139,92,246,0.08); border-radius:6px; margin-top:8px; border:1px solid rgba(139,92,246,0.2);">
                 <strong>📝 필수 서류 안내 (YesTrade 제출 불필요)</strong><br/>
                 • <strong>[F-01] 자가판정서:</strong> 세관 통관 시 "전략물자 비해당" 입증을 위해 자사 명의로 발급하여 관세사/세관에 제출<br/>
-                • <strong>[F-02] 전문판정서:</strong> (선택사항) 자가판정이 불확실할 경우 전략물자관리원에 판정 신청<br/>
+                • <strong>[F-02] 전문판정서:</strong> (선택사항) 자가판정이 불확실할 경우 무역안보관리원에 판정 신청<br/>
                 <span style="color:var(--text-secondary);">※ 별도의 수출허가(L계열) 서류나 거래보고(K계열) 서류가 필요하지 않습니다.</span>
               </div>`;
               color = 'var(--accent-purple)';
@@ -2766,7 +2767,7 @@ ${customInstruction}
   ${fieldKeys.map(key => `"${key}": "답변 내용"`).join(',\n  ')}
 }`;
         
-              const response = await fetch('/api/analyze_catalog', {
+              const response = await authFetch('/api/analyze_catalog', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

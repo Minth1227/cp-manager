@@ -1,3 +1,4 @@
+import { authFetch } from './authFetch.js';
 import { getSlackWebhookUrl, getSlackBotToken, getSlackAnnounceChannelId, getSlackApproverIds, getSlackBroadcastDmEnabled } from '../store.js';
 
 /**
@@ -25,12 +26,13 @@ import { getSlackWebhookUrl, getSlackBotToken, getSlackAnnounceChannelId, getSla
 export async function notifySlackApprovalInteractive({ formId, storageKey, approverRoleLabel, title, detail, link, requesterEmail, requesterName, requesterSlackUserId, visibilityScope, previewPdfBase64 }) {
   const botToken = getSlackBotToken();
   const approverSlackUserId = getSlackApproverIds()[approverRoleLabel];
-  if (!botToken || !approverSlackUserId) {
+  // Bot Token은 서버 환경변수(SLACK_BOT_TOKEN)에 둘 수 있으므로 클라이언트 저장값이 없어도 호출한다.
+  if (!approverSlackUserId) {
     return { unavailable: true };
   }
 
   try {
-    const res = await fetch('/.netlify/functions/slack_post_approval', {
+    const res = await authFetch('/.netlify/functions/slack_post_approval', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ botToken, approverSlackUserId, title, detail, link, formId, storageKey, approverRoleLabel, requesterEmail, requesterName, requesterSlackUserId, visibilityScope, previewPdfBase64 })
@@ -83,7 +85,7 @@ export async function notifySlackApproval({ title, detail, link, approverRoleLab
   const payload = { text: lines.join('\n') };
 
   try {
-    const res = await fetch('/.netlify/functions/slack_notify', {
+    const res = await authFetch('/.netlify/functions/slack_notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ webhookUrl, payload })
@@ -115,20 +117,24 @@ export async function sendSlackDocument({ title, pdfBlob, filename, link }) {
   const botToken = getSlackBotToken();
   const channelId = getSlackAnnounceChannelId();
 
-  if (!botToken || !channelId) {
+  if (!channelId) {
     // 아직 파일 업로드용 설정이 안 되어 있으면, 최소한 텍스트 알림(+링크)이라도 보낸다.
     return notifySlackApproval({ title, detail: '(Slack Bot Token/채널을 등록하면 PDF 파일이 직접 첨부됩니다)', link });
   }
 
   try {
     const pdfBase64 = await blobToBase64(pdfBlob);
-    const res = await fetch('/.netlify/functions/slack_upload_pdf', {
+    const res = await authFetch('/.netlify/functions/slack_upload_pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ botToken, channelId, filename, pdfBase64, message: title })
     });
     if (!res.ok) {
       console.error('Slack PDF 업로드 실패:', await res.text());
+      // 토큰 미설정(400) 등으로 파일 업로드가 안 되면 텍스트 알림으로 대체
+      if (res.status === 400) {
+        return notifySlackApproval({ title, detail: '(Slack Bot Token이 서버에 설정되면 PDF 파일이 직접 첨부됩니다)', link });
+      }
       return { skipped: false, ok: false };
     }
     return { skipped: false, ok: true };
@@ -151,12 +157,12 @@ export async function broadcastSlackDM({ title, link }) {
   if (!getSlackBroadcastDmEnabled()) return { skipped: true, reason: 'disabled' };
 
   const botToken = getSlackBotToken();
-  if (!botToken) return { skipped: true, reason: 'no-token' };
+  // Bot Token은 서버 환경변수에 있을 수 있으므로 여기서 건너뛰지 않는다.
 
   const message = link ? `${title}\n${link}` : title;
 
   try {
-    const res = await fetch('/.netlify/functions/slack_broadcast_dm', {
+    const res = await authFetch('/.netlify/functions/slack_broadcast_dm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ botToken, message })

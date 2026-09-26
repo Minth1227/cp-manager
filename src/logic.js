@@ -1,4 +1,5 @@
-import { setFormStatus, getFormStatus, getCaseFormData } from './store.js';
+import { setFormStatus, getFormStatus, getCaseFormData, getCompanyInfo, getTargetGrade } from './store.js';
+import { getDesignatedCpGrade, capCpGrade } from './utils/legalBasis.ts';
 
 import { evaluateRoutingEngine } from './utils/complianceRuleEngineV2.ts';
 
@@ -79,7 +80,9 @@ export async function evaluateBusinessLogic(triggerFormId, formData) {
         has12RedFlags: z01['q_redflag'] === '예' // 12개 징후
       },
       transaction: {
-        cpGrade: z01['q_cp_grade'] === '등급없음' ? 'NONE' : (z01['q_cp_grade'] || 'NONE')
+        // 서식에서 고른 등급이 아니라 실제 지정서 기준 등급을 상한으로 쓴다 (미지정이면 NONE → 특례 미적용)
+        cpGrade: capCpGrade(z01['q_cp_grade'] === '등급없음' ? 'NONE' : (z01['q_cp_grade'] || 'NONE'),
+                            getDesignatedCpGrade(getCompanyInfo(), getTargetGrade()))
       },
       archivedDocs: {}
     };

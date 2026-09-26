@@ -210,9 +210,9 @@ export function renderDashboard(container, onSelectForm) {
       }
       if (!isEducationFullyPassed) {
         if (compInfo.cpAppMode === 'certified') {
-          alarms.push({ type: 'danger', icon: 'school', text: '핵심 교육(Basic 등) 또는 워크숍 갱신 주기가 도래했습니다. (A-09 대장 확인 필요)', legalText: '[고시 제78조] 3년 주기 미갱신 시 CP 지정(AA등급) 정지 및 취소 처분' });
+          alarms.push({ type: 'danger', icon: 'school', text: '핵심 교육(Basic 등) 또는 워크숍 갱신 주기가 도래했습니다. (A-09 대장 확인 필요)', legalText: '[별표 20] 1.1.4 담당자 인적요건(교육·워크숍 실적) — 능력을 유지하지 못하면 등급 조정 사유 (대외무역법 제22조의2제2항제1호)' });
         } else if (compInfo.cpAppMode === 'initial') {
-          alarms.push({ type: 'warning', icon: 'school', text: '신규 신청 시 요구되는 필수 교육(4과목) 이수가 미완료 상태입니다.', legalText: '[고시 제78조] 신청 접수 시점 기준 필수 교육 이수증 제출 필수 (미제출 시 반려)' });
+          alarms.push({ type: 'warning', icon: 'school', text: '신규 신청 시 요구되는 필수 교육(4과목) 이수가 미완료 상태입니다.', legalText: '[별표 20] 1.1.4① 등급평가일 기준 1년 이내 담당자의 지정 교육과정 이수 실적 필요 (최초 신청 시 면제되는 것은 ③·④뿐)' });
         }
       }
       const c04Data = getFormData('C-04') || {};
@@ -220,9 +220,9 @@ export function renderDashboard(container, onSelectForm) {
         const dLine = new Date(c04Data.deadline);
         const diffDays = Math.ceil((dLine - today) / (1000 * 60 * 60 * 24));
         if (diffDays <= 30 && diffDays >= 0) {
-          alarms.push({ type: 'warning', icon: 'gavel', text: `감사 시정조치(C-04) 요구 기한이 ${diffDays}일 남았습니다. (목표일: ${c04Data.deadline})`, legalText: '[고시 별표20] 기한 내 미시정 시 고의적 은폐로 간주되어 실사 시 가중 처벌 리스크' });
+          alarms.push({ type: 'warning', icon: 'gavel', text: `감사 시정조치(C-04) 요구 기한이 ${diffDays}일 남았습니다. (목표일: ${c04Data.deadline})`, legalText: '[별표 20] 6.1.3 감사 결과에 대한 시정조치 — 사내 규정상 기한 관리 대상' });
         } else if (diffDays < 0) {
-          alarms.push({ type: 'danger', icon: 'error', text: `감사 시정조치(C-04) 요구 기한이 경과되었습니다! 즉각 조치가 필요합니다.`, legalText: '[고시 별표20] 기한 내 미시정 시 고의적 은폐로 간주되어 실사 시 가중 처벌 리스크' });
+          alarms.push({ type: 'danger', icon: 'error', text: `감사 시정조치(C-04) 요구 기한이 경과되었습니다! 즉각 조치가 필요합니다.`, legalText: '[별표 20] 6.1.3 감사 결과에 대한 시정조치 — 사내 규정상 기한 관리 대상' });
         }
       }
       const g03Data = getFormData('G-03') || {};
@@ -230,13 +230,13 @@ export function renderDashboard(container, onSelectForm) {
         const eLine = new Date(g03Data.expireDate);
         const diffDays = Math.ceil((eLine - today) / (1000 * 60 * 60 * 24));
         if (diffDays <= 30 && diffDays >= 0) {
-          alarms.push({ type: 'warning', icon: 'assignment_late', text: `[경고] 수출허가(G-03) 만료일이 ${diffDays}일 남았습니다. 연장 신청(L-01)을 준비하세요.`, legalText: '[대외무역법 제19조] 만료일 경과 후 선적 시 무허가 밀수출(7년 이하 징역 등 형사처벌)' });
+          alarms.push({ type: 'warning', icon: 'assignment_late', text: `[경고] 수출허가(G-03) 만료일이 ${diffDays}일 남았습니다. 연장 신청(L-01)을 준비하세요.`, legalText: '[대외무역법 제19조의2] 유효한 허가 없이 수출 시 무허가 수출 (벌칙: 같은 법 제53조)' });
         } else if (diffDays < 0) {
-          alarms.push({ type: 'danger', icon: 'block', text: `[위반] 수출허가(G-03) 유효기간이 지났습니다! 해당 허가로 선적 시 밀수출(형벌)에 해당합니다.`, legalText: '[대외무역법 제19조] 만료일 경과 후 선적 시 무허가 밀수출(7년 이하 징역 등 형사처벌)' });
+          alarms.push({ type: 'danger', icon: 'block', text: `[위반] 수출허가(G-03) 유효기간이 지났습니다! 해당 허가로 선적 시 밀수출(형벌)에 해당합니다.`, legalText: '[대외무역법 제19조의2] 유효한 허가 없이 수출 시 무허가 수출 (벌칙: 같은 법 제53조)' });
         }
       }
       if (compInfo.cpAppMode === 'certified' && (today.getMonth() === 0 || today.getMonth() === 1)) {
-        alarms.push({ type: 'warning', icon: 'campaign', text: `[법정의무] 전년도 자율준수체제 실적보고서(K-03) 제출 기한이 도래했습니다. (1월 31일까지)`, legalText: '[고시 제83조] 실적보고서 지연 및 미제출 시 CP 자격 즉시 정지/박탈' });
+        alarms.push({ type: 'warning', icon: 'campaign', text: `[법정의무] 전년도 자율준수체제 운영보고(고시 별지 제18호) 제출 기한이 도래했습니다. (보고기간 종료 후 1개월 이내)`, legalText: '[고시 제86조·별표 19] AA등급: 운영보고 연간·실적보고 반기. 보고의무 미이행은 등급 조정 사유 (대외무역법 제22조의2제2항제6호)' });
       }
 
       if (alarms.length === 0) {
@@ -276,7 +276,7 @@ export function renderDashboard(container, onSelectForm) {
         <div><label style="display:block; font-size:0.75rem; color:var(--text-secondary); margin-bottom:4px;">회사명 (상호)</label><input type="text" id="comp-name" class="form-input" style="padding:6px 10px; font-size:0.85rem;" value="${compInfo.name || ''}" placeholder="(주)팝콘사" /></div>
         <div><label style="display:block; font-size:0.75rem; color:var(--text-secondary); margin-bottom:4px;">대표자</label><input type="text" id="comp-ceo" class="form-input" style="padding:6px 10px; font-size:0.85rem;" value="${compInfo.ceo || ''}" placeholder="대표이사" /></div>
         <div><label style="display:block; font-size:0.75rem; color:var(--text-secondary); margin-bottom:4px;">사업자등록번호</label><input type="text" id="comp-reg-num" class="form-input" style="padding:6px 10px; font-size:0.85rem;" value="${compInfo.registrationNumber || ''}" placeholder="123-86-00000" /></div>
-        <div id="field-target-date-box" style="${compInfo.cpAppMode === 'certified' ? 'display:none;' : ''}"><label style="display:block; font-size:0.75rem; color:var(--accent-blue); font-weight:600; margin-bottom:4px;">📅 지정신청 접수(목표)일자</label><input type="date" id="comp-target-date" class="form-input" style="padding:6px 10px; font-size:0.85rem; border-color:var(--accent-blue);" value="${compInfo.cpTargetApplyDate || '2026-03-31'}" /></div>
+        <div id="field-target-date-box" style="${compInfo.cpAppMode === 'certified' ? 'display:none;' : ''}"><label style="display:block; font-size:0.75rem; color:var(--accent-blue); font-weight:600; margin-bottom:4px;">📅 지정신청 접수(목표)일자</label><input type="date" id="comp-target-date" class="form-input" style="padding:6px 10px; font-size:0.85rem; border-color:var(--accent-blue);" value="${compInfo.cpTargetApplyDate || ''}" /></div>
         <div id="field-certified-date-box" style="${compInfo.cpAppMode === 'certified' ? '' : 'display:none;'}"><label style="display:block; font-size:0.75rem; color:var(--accent-green); font-weight:600; margin-bottom:4px;">📅 CP 최초 인증(지정)일자</label><input type="date" id="comp-cp-date" class="form-input" style="padding:6px 10px; font-size:0.85rem; border-color:var(--accent-green);" value="${compInfo.cpCertifiedDate || ''}" /></div>
         <div id="field-certified-num-box" style="${compInfo.cpAppMode === 'certified' ? '' : 'display:none;'}"><label style="display:block; font-size:0.75rem; color:var(--accent-green); font-weight:600; margin-bottom:4px;">🎖️ CP 지정(인증)번호</label><input type="text" id="comp-cp-num" class="form-input" style="padding:6px 10px; font-size:0.85rem; border-color:var(--accent-green);" value="${compInfo.cpCertifiedNumber || ''}" placeholder="CP-2025-AA-0192" /></div>
         <div id="field-initial-status-box" style="${compInfo.cpAppMode === 'certified' ? 'display:none;' : ''}"><label style="display:block; font-size:0.75rem; color:var(--text-tertiary); margin-bottom:4px;">CP 지정번호 상태</label><input type="text" class="form-input" style="padding:6px 10px; font-size:0.85rem; background:rgba(0,0,0,0.03); color:var(--text-tertiary);" value="신규 심사 진행중 (미발급)" readonly /></div>
