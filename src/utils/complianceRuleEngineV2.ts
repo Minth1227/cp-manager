@@ -1,6 +1,6 @@
 // 주의: 등급별 제출/사내보관 구분은 [별표 19] 특례를 단순화한 사내 안내용이다.
-// cpGrade는 호출부(logic.js)에서 실제 지정 등급으로 상한을 둔다. 수출자 서약서(L-10)는
-// 현행 고시(제2026-101호)에서 삭제되었다는 보도가 있어 원문 대조 후 정리가 필요하다.
+// cpGrade는 호출부(logic.js)에서 실제 지정 등급으로 상한을 둔다.
+// 수출자 서약서(L-10, 구 별지 제3호)는 고시 제2026-101호로 폐지되어 모든 경로에서 제외했다.
 export type CPGrade = 'NONE' | 'A' | 'AA' | 'AAA';
 export type ExportRoute = 'GENERAL' | 'CATCH_ALL' | 'INDIVIDUAL' | 'USER_COMPREHENSIVE' | 'ITEM_USER_COMPREHENSIVE' | 'TOP_TIER_COMPREHENSIVE' | 'BLOCKED';
 
@@ -66,7 +66,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
   // (processFlow.js상 "상황허가 전용 첨부서류"로 분류된 서식)를 개별/포괄수출허가 케이스에도
   // 그대로 재사용하고 있었고, EUC(최종사용자서약서)를 L-05로, C-01(사내교육 시행 공지문)을
   // "CP 내부심사서"로 잘못 표기하고 있었다. 실제 서식 카탈로그(definitions.js) 기준으로 바로잡음:
-  //   - L-03 최종수하인 및 구매자 진술서, L-04 최종사용자 서약서(EUC), L-10 수출자 서약서
+  //   - L-03 최종수하인 및 구매자 진술서, L-04 최종사용자 서약서(EUC) (L-10 수출자 서약서는 폐지)
   //     → 개별/포괄수출허가 공통 첨부서류 (processFlow.js의 step-export-permit-common)
   //   - L-05~L-09 → 상황허가 전용 첨부서류 (processFlow.js의 step-export-permit-catchall)
   //   - C-01(사내교육 공지문)은 이 맥락과 무관 → 제거, G-01(전략물자 거래심사표) 유지
@@ -124,7 +124,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
     return {
       route: 'INDIVIDUAL',
       routeName: '개별수출허가 (강제)',
-      requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-10', 'L-11'], // 개별신청서 + 공통 첨부서류 + 수출계약서/영업증명서/기술사양서
+      requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-11'], // 개별신청서 + 공통 첨부서류 + 수출계약서/영업증명서/기술사양서
       requiredForArchive: ['F-01', 'G-01'],
       isBlocked: false,
     };
@@ -135,7 +135,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
     return {
       route: 'INDIVIDUAL',
       routeName: '개별수출허가 (강제)',
-      requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-10', 'L-11'],
+      requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-11'],
       requiredForArchive: ['F-01', 'G-01'],
       isBlocked: false,
     };
@@ -146,7 +146,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
     return {
       route: 'INDIVIDUAL',
       routeName: '개별수출허가 (강제)',
-      requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-10', 'L-11'],
+      requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-11'],
       requiredForArchive: ['F-01', 'G-01'],
       isBlocked: false,
     };
@@ -157,7 +157,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
     return {
       route: 'INDIVIDUAL',
       routeName: '개별수출허가',
-      requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-10', 'L-11'],
+      requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-11'],
       requiredForArchive: ['F-01', 'G-01'],
       isBlocked: false,
     };
@@ -168,7 +168,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
       return {
         route: 'INDIVIDUAL',
         routeName: '개별수출허가',
-        requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-10', 'L-11'],
+        requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-11'],
         requiredForArchive: ['F-01', 'G-01'],
         isBlocked: false,
       };
@@ -177,9 +177,9 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
       return {
         route: 'USER_COMPREHENSIVE',
         routeName: '사용자 포괄허가',
-        // AA등급은 수출자 서약서(L-10)·수출계약서 등(L-11)까지 제출, AAA등급은 정부제출에서 면제되고 사내보관으로 대체
-        requiredForSubmit: cpGrade === 'AA' ? ['L-02', 'L-04', 'L-10', 'L-11'] : ['L-02', 'L-04'],
-        requiredForArchive: cpGrade === 'AA' ? ['L-03'] : ['L-03', 'L-10', 'L-11'],
+        // AA등급은 수출계약서 등(L-11)까지 제출, AAA등급은 정부제출에서 면제되고 사내보관으로 대체 (사내 안내용 단순화)
+        requiredForSubmit: cpGrade === 'AA' ? ['L-02', 'L-04', 'L-11'] : ['L-02', 'L-04'],
+        requiredForArchive: cpGrade === 'AA' ? ['L-03'] : ['L-03', 'L-11'],
         isBlocked: false,
       };
     }
@@ -190,7 +190,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
       return {
         route: 'USER_COMPREHENSIVE',
         routeName: '사용자 포괄허가',
-        requiredForSubmit: ['L-02', 'L-03', 'L-04', 'L-10', 'L-11'], // 포괄신청서, 최종수하인·구매자진술서, EUC, 수출자서약서, 수출계약서 등
+        requiredForSubmit: ['L-02', 'L-03', 'L-04', 'L-11'], // 포괄신청서, 최종수하인·구매자진술서, EUC, 수출계약서 등
         requiredForArchive: [],
         isBlocked: false,
       };
@@ -199,7 +199,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
       return {
         route: 'ITEM_USER_COMPREHENSIVE',
         routeName: '품목/사용자 포괄허가',
-        requiredForSubmit: ['L-02', 'L-04', 'L-10'], // 포괄신청서, EUC, 수출자서약서
+        requiredForSubmit: ['L-02', 'L-04'], // 포괄신청서, EUC
         requiredForArchive: ['L-03', 'L-11'], // 최종수하인·구매자진술서, 영업증명서/기술사양서는 사내보관으로 대체
         isBlocked: false,
       };
@@ -209,7 +209,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
         route: 'TOP_TIER_COMPREHENSIVE',
         routeName: '최상위 포괄허가',
         requiredForSubmit: ['L-02', 'L-04'], // 포괄신청서, EUC(자율준수 서약 성격 포함)만 제출
-        requiredForArchive: ['L-03', 'L-10', 'L-11'], // 최종수하인·구매자진술서, 수출자서약서, 수출계약서/영업/기술사양서는 사내보관
+        requiredForArchive: ['L-03', 'L-11'], // 최종수하인·구매자진술서, 수출계약서/영업/기술사양서는 사내보관
         isBlocked: false,
       };
     }
@@ -219,7 +219,7 @@ export function evaluateRoutingEngine(state: ExportCaseStateV2): RouteResult {
   return {
     route: 'INDIVIDUAL',
     routeName: '알 수 없는 상태 (개별수출허가 징구)',
-    requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-10', 'L-11'],
+    requiredForSubmit: ['L-01', 'L-03', 'L-04', 'L-11'],
     requiredForArchive: ['F-01', 'G-01'],
     isBlocked: false,
   };

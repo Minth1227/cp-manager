@@ -301,9 +301,13 @@ export const CPExportWorkflowWizard: React.FC<WizardProps> = ({ txId, onClose })
           </div>
         </div>
 
-        {!LEGAL_REFERENCE.currentNoticeVerified && (
+        {(!LEGAL_REFERENCE.currentNoticeVerified || PENDING_LEGAL_CHECKS.length > 0) && (
           <div className="mb-6 p-4 rounded-lg border border-amber-300 bg-amber-50 text-xs text-amber-800">
-            <p className="font-bold mb-1">법령 기준 안내: 이 화면의 판단 로직은 {LEGAL_REFERENCE.baseNotice} 원문 기준입니다. 현행 {LEGAL_REFERENCE.currentNotice}와의 대조가 끝나지 않았습니다.</p>
+            <p className="font-bold mb-1">
+              {LEGAL_REFERENCE.currentNoticeVerified
+                ? `법령 기준: ${LEGAL_REFERENCE.currentNotice} 원문 대조 완료. 아래 사항은 제출 전 허가기관 확인을 권장합니다.`
+                : `법령 기준 안내: 이 화면의 판단 로직은 ${LEGAL_REFERENCE.baseNotice} 원문 기준입니다. 현행 ${LEGAL_REFERENCE.currentNotice}와의 대조가 끝나지 않았습니다.`}
+            </p>
             <ul className="list-disc list-inside space-y-0.5">
               {PENDING_LEGAL_CHECKS.map(item => <li key={item}>{item}</li>)}
             </ul>

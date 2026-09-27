@@ -29,23 +29,33 @@ eq('미조회 → 출하불가', canRelease(s0).ok, false);
 eq('중국 목적지 차단 안 됨', evaluateScreeningStatus(base().screening, resolveDestination('중국')).isBlocked, false);
 eq('이란 목적지 차단', evaluateScreeningStatus(base().screening, resolveDestination('이란')).isBlocked, true);
 
-// 2. 5D002 물품, 독일(가), 미지정
+// 2. 5D002 물품, 독일(가), 미지정 — 제2026-101호 현행 문언
 let d = en(base());
 eq('가·물품 L-01', d['L-01'], true);
 eq('가·물품 계약서 면제(21①)', d['DOC-CONTRACT'], false);
-eq('가·물품 최종사용자서약서 면제(21①)', d['DOC-ENDUSER'], false);
-eq('가·물품 수출자서약서 면제(21①)', d['L-10'], false);
+eq('가·물품 최종사용자서약서 면제(21① 4호)', d['DOC-ENDUSER'], false);
+eq('가·물품 영업증명서 면제(21① 5호, 문언)', d['DOC-BIZCERT'], false);
+eq('가·물품 최종수하인진술서 필요(20①3호는 면제 호수 아님)', d['DOC-CONSIGNEE'], true);
+eq('수출자서약서 폐지', 'L-10' in d, false);
+eq('제18조의3 확인기록', d['G-01-183'], true);
 eq('미지정 → 포괄 불가', d['L-02'], false);
-// 3. 같은 조건 + 기술
+// 3. 같은 조건 + 기술 → 제21조⑧1호로 20②1~4 면제
 d = en(base({ transaction: { ...base().transaction, isTechnologyTransfer: true } }));
-eq('가·기술 계약서 필요', d['DOC-CONTRACT'], true);
-eq('가·기술 최종사용자서약서 필요', d['DOC-ENDUSER'], true);
-eq('가·기술 수출자서약서 필요', d['L-10'], true);
-eq('가·기술 기술명세서', d['L-TECH'], true);
+eq('가·기술 계약서 면제(21⑧)', d['DOC-CONTRACT'], false);
+eq('가·기술 최종사용자서약서 면제(21⑧)', d['DOC-ENDUSER'], false);
+eq('가·기술 기술명세서 면제(21⑧)', d['L-TECH'], false);
+eq('가·기술 판정서 안내', d['F-01-NOTE'], true);
 eq('기술 → 최종수하인진술서 없음', d['DOC-CONSIGNEE'], false);
+// 3-1. 나의1 기술 → 20② 서류 필요
+d = en(base({ destination: resolveDestination('중국'), transaction: { ...base().transaction, isTechnologyTransfer: true } }));
+eq('나의1·기술 계약서', d['DOC-CONTRACT'], true);
+eq('나의1·기술 기술명세서', d['L-TECH'], true);
+eq('나의1·기술 최종사용자서약서', d['DOC-ENDUSER'], true);
+eq('나의1·기술 영업증명서 해당없음', d['DOC-BIZCERT'], false);
 // 4. 중국(나의1), 미지정 / AA
 d = en(base({ destination: resolveDestination('중국') }));
 eq('나의1 계약서', d['DOC-CONTRACT'], true);
+eq('나의1 영업증명서', d['DOC-BIZCERT'], true);
 eq('나의1 최종사용자서약서 (AA 여부 무관)', d['DOC-ENDUSER'], true);
 d = en(base({ destination: resolveDestination('중국'), transaction: { ...base().transaction, isCP_AA: true } }));
 eq('AA여도 나의1 서약서 자동면제 안 함', d['DOC-ENDUSER'], true);

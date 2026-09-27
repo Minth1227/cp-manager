@@ -280,7 +280,7 @@ export function renderExportScreeningFlowView(container, onNavigateToForm) {
       forms: [
         { title: 'L-03 최종수하인 및 구매자 진술서 (별지2)', formId: 'L-03', url: pdfUrl('[별지 2] STATEMENT BY ULTIMATE CONSIGNEE AND PURCHASER(전략물자수출입고시).pdf') },
         { title: 'L-04 최종사용자 서약서 (별지2의2)', formId: 'L-04', url: pdfUrl('[별지 2의2] END-USER STATEMENT(전략물자수출입고시).pdf') },
-        { title: 'L-10 수출자 서약서 (별지3)', formId: 'L-10', url: pdfUrl('[별지 3] 수출자 서약서(전략물자수출입고시).pdf') }
+        { title: '[폐지 2026.9.1.] L-10 수출자 서약서 (구 별지3)', formId: 'L-10', url: pdfUrl('[별지 3] 수출자 서약서(전략물자수출입고시).pdf') }
       ]
     },
     'SCREEN2': {

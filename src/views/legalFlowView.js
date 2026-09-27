@@ -429,7 +429,7 @@ export function renderLegalFlowView(container, onNavigateToForm) {
       ],
       forms: [
         { title: '[별지 1] 전략물자 수출허가(신청)서', formId: 'L-01', url: pdfUrl('[별지 1] 전략물자(기술)등 수출허가(신청)(거부)서(전략물자수출입고시).pdf') },
-        { title: '[별지 3] 수출자 서약서', formId: null, url: pdfUrl('[별지 3] 수출자 서약서(전략물자수출입고시).pdf') }
+        { title: '[폐지 2026.9.1.] 구 별지 3 수출자 서약서', formId: null, url: pdfUrl('[별지 3] 수출자 서약서(전략물자수출입고시).pdf') }
       ]
     },
     'INDIV_NORMAL': {
@@ -442,7 +442,7 @@ export function renderLegalFlowView(container, onNavigateToForm) {
       forms: [
         { title: '[별지 1] 전략물자 수출허가(신청)서', formId: 'L-01', url: pdfUrl('[별지 1] 전략물자(기술)등 수출허가(신청)(거부)서(전략물자수출입고시).pdf') },
         { title: '[별지 2] END-USER STATEMENT', formId: null, url: pdfUrl('[별지 2] STATEMENT BY ULTIMATE CONSIGNEE AND PURCHASER(전략물자수출입고시).pdf') },
-        { title: '[별지 3] 수출자 서약서', formId: null, url: pdfUrl('[별지 3] 수출자 서약서(전략물자수출입고시).pdf') }
+        { title: '[폐지 2026.9.1.] 구 별지 3 수출자 서약서', formId: null, url: pdfUrl('[별지 3] 수출자 서약서(전략물자수출입고시).pdf') }
       ]
     },
     'FREE': {

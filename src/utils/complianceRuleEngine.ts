@@ -263,8 +263,9 @@ export function getEnabledDocuments(state: ExportCaseState): DocumentConfig[] {
   const t = state.transaction;
   const isTech = !!t.isTechnologyTransfer;
   const isRevoked = state.status === 'REVOKED';
-  const pendingNote = LEGAL_REFERENCE.currentNoticeVerified ? undefined
-    : `현행 ${LEGAL_REFERENCE.currentNotice} 원문 대조 전 — 제출 전 허가기관 안내로 확인`;
+  // 제20조 호 번호가 제2026-101호에서 당겨졌으나 제21조의 인용 호수는 개정되지 않았다.
+  // 이 엔진은 현행 조문 "문언" 그대로 적용하고, 해당 서류에 허가기관 확인 권장 안내를 붙인다.
+  const renumberNote = '제2026-101호로 제20조 호 번호가 바뀌었으나 제21조 인용 호수는 그대로임 — 현행 문언 기준 적용, 제출 전 허가기관 확인 권장';
 
   const add = (id: string, name: string, enabled: boolean, disabledReason?: string, pkg?: string, note?: string) => {
     docs.push({ id, name, enabled, disabledReason: enabled ? undefined : disabledReason, note: enabled ? note : undefined, package: pkg });
@@ -307,9 +308,13 @@ export function getEnabledDocuments(state: ExportCaseState): DocumentConfig[] {
     '인허가', computedEccn === 'ML21' ? '군용물자는 방위사업청 소관 허가입니다 (고시 제5조). 허가기관 안내를 확인하십시오.'
       : isB2 ? "나의2 지역: [별표 6] 제3호 등에 따라 서류·허가 면제가 제한됩니다." : undefined);
 
+  // 제21조⑧1호: 산업통상부장관 허가 대상 "기술"을 가 지역으로 수출 → 제20조②제1호~제4호 면제
+  //   (현행 번호: 1 계약서, 2 기술명세서, 3 최종사용자 서약서, 4 판정서)
+  const techGroupAExempt = isTech && isGroupA && computedEccn !== 'ML21';
   if (isTech) {
-    add('L-TECH', FORM_LABELS.techSpec, needsLicense, '개별수출허가 신청 대상이 아닙니다.', '인허가',
-      '기술 수출은 고시 제20조②의 서류를 따르며 제21조①(가 지역 서류면제)이 적용되지 않습니다.');
+    add('L-TECH', FORM_LABELS.techSpec, needsLicense && !techGroupAExempt,
+      !needsLicense ? '개별수출허가 신청 대상이 아닙니다.' : "고시 제21조⑧1호: '가' 지역 기술 수출 시 제20조②1~4호 제출 면제 (사내 보관은 유지)",
+      '인허가', '고시 제20조②2호');
   }
 
   add('L-02', FORM_LABELS.comprehensiveLicense, strategic && t.isCP_AA && !isB2,
@@ -323,32 +328,50 @@ export function getEnabledDocuments(state: ExportCaseState): DocumentConfig[] {
     strategic ? '전략물자 해당 품목은 개별/포괄수출허가 절차를 따릅니다.' : '의심징후·우려거래자 일치가 없습니다.',
     '상황허가 패키지', '상황허가 대상 여부는 고시 제54조 요건으로 담당자가 판단합니다.');
 
-  // ── 허가 신청 첨부서류 (고시 제20조, 제21조) ──
+  // ── 허가 신청 첨부서류 (고시 제20조, 제21조 — 제2026-101호 현행 번호) ──
+  // 제20조① 물품: 1 계약서 / 2 판정서 / 3 수입목적확인서 또는 최종수하인 진술서(별지2) /
+  //               4 최종사용자 서약서(별지2의2·2의3) / 5 최종사용자 영업증명서 / 6 기타
+  // 제20조② 기술: 1 계약서(서면계약 없으면 제외) / 2 기술명세서 / 3 최종사용자 서약서 / 4 판정서 / 5 기타
+  // 수출자 서약서(구 별지 제3호)는 제2026-101호로 폐지 — 의무는 제18조의3으로 이관
   const licenseDocsNeeded = needsLicense || catchAllCandidate;
-  // 제21조①: 물품(기술 아님)을 가 지역으로 → 제20조①1호, 4~6호 면제
-  // 제21조①은 "제5조에서 정한 산업통상부장관의 허가 대상품목"에 한정 → 군용물자(ML)는 제외
+  // 제21조①: 장관 허가 대상 물품을 가 지역으로 → 제20조①1호, 4호~6호 면제 (문언 기준). 군용물자(ML) 제외
   const goodsGroupAExempt = !isTech && isGroupA && computedEccn !== 'ML21';
+  const groupAExempt = isTech ? techGroupAExempt : goodsGroupAExempt;
+  const notNeeded = '허가 신청 대상이 아닙니다.';
 
-  add('DOC-CONTRACT', '수출계약서·신용장·가계약서 중 1부', licenseDocsNeeded && !goodsGroupAExempt,
-    !licenseDocsNeeded ? '허가 신청 대상이 아닙니다.' : "고시 제21조①: 물품을 '가' 지역으로 수출하는 경우 제출 면제 (사내 보관은 유지)",
-    '인허가', isTech ? '기술 수출이라도 서면계약 없이 수출하는 경우는 제출하지 않음 (제20조② 단서)' : undefined);
+  add('DOC-CONTRACT', '수출계약서·신용장·가계약서 중 1부', licenseDocsNeeded && !groupAExempt,
+    !licenseDocsNeeded ? notNeeded
+      : isTech ? "고시 제21조⑧1호: '가' 지역 기술 수출 시 제출 면제 (사내 보관은 유지)"
+      : "고시 제21조①: '가' 지역 물품 수출 시 제출 면제 (사내 보관은 유지)",
+    '인허가', isTech ? '서면계약 없이 기술을 수출하는 경우 제출하지 않음 (제20조② 단서)' : '고시 제20조①1호');
 
-  add('DOC-CONSIGNEE', FORM_LABELS.consigneeStatement, licenseDocsNeeded && !isTech && !goodsGroupAExempt,
-    !licenseDocsNeeded ? '허가 신청 대상이 아닙니다.' : isTech ? '기술 수출 서류 목록(제20조②)에 없는 서류입니다.'
-      : "고시 제21조①: '가' 지역 물품 수출 시 제출 면제",
-    '인허가', '구매자·최종수하인·최종사용자가 같으면 제출 면제 (제21조③) — 해당 시 담당자가 판단');
+  add('DOC-CONSIGNEE', `${FORM_LABELS.consigneeStatement} 또는 수입국 정부 수입목적확인서`, licenseDocsNeeded && !isTech,
+    !licenseDocsNeeded ? notNeeded : '기술 수출 서류 목록(제20조②)에 없는 서류입니다.',
+    '인허가', isGroupA ? `'가' 지역이라도 제20조①3호는 제21조① 면제 호수(1, 4~6호)에 없음. ${renumberNote}` : '고시 제20조①3호');
 
-  add('L-10', FORM_LABELS.exporterPledge, licenseDocsNeeded && !goodsGroupAExempt,
-    !licenseDocsNeeded ? '허가 신청 대상이 아닙니다.' : "고시 제21조①: '가' 지역 물품 수출 시 제출 면제",
-    '인허가', '현행 고시(제2026-101호)에서 삭제되었다는 보도가 있음 — 원문 확인 전까지 기존 기준 유지');
-
-  const euEnabled = licenseDocsNeeded && !goodsGroupAExempt;
-  add('DOC-ENDUSER', `${FORM_LABELS.endUserStatement} (바세나르 품목은 ${FORM_LABELS.endUserStatementWA} 가능)`, euEnabled,
-    !licenseDocsNeeded ? '허가 신청 대상이 아닙니다.' : "고시 제21조①: '가' 지역 물품 수출 시 제출 면제",
+  add('DOC-ENDUSER', `${FORM_LABELS.endUserStatement} (바세나르 품목은 ${FORM_LABELS.endUserStatementWA} 가능)`, licenseDocsNeeded && !groupAExempt,
+    !licenseDocsNeeded ? notNeeded
+      : isTech ? "고시 제21조⑧1호: '가' 지역 기술 수출 시 제출 면제" : "고시 제21조①: '가' 지역 물품 수출 시 제출 면제",
     '인허가', [
-      '국제수출통제체제 회원국 수출 면제(제21조④1호), [별표 19] 서류면제(기존 실적 최종사용자·동일 품목 등)는 담당자가 요건을 확인한 경우에만 제외',
-      pendingNote,
-    ].filter(Boolean).join(' / '));
+      isTech ? '고시 제20조②3호' : '고시 제20조①4호',
+      '구매자·최종수하인·최종사용자가 같은 경우(제21조③), 국제수출통제체제 회원국 수출(제21조④1호), 최근 1년 동일 거래 3건 이상(제21조⑪), [별표 19] 서류면제는 담당자가 요건을 확인한 경우에만 제외',
+    ].join(' / '));
+
+  add('DOC-BIZCERT', '최종사용자 영업증명서·납세증명서 등 (수입국 정부 발행)', licenseDocsNeeded && !isTech && !goodsGroupAExempt,
+    !licenseDocsNeeded ? notNeeded : isTech ? '기술 수출 서류 목록(제20조②)에 없는 서류입니다.'
+      : "고시 제21조①: '가' 지역 물품 수출 시 제출 면제 (문언 기준)",
+    '인허가', isGroupA ? renumberNote : '고시 제20조①5호');
+
+  if (isTech && licenseDocsNeeded && techGroupAExempt) {
+    docs.push({ id: 'F-01-NOTE', name: '판정서 제출', enabled: true, package: '인허가',
+      note: `고시 제21조⑧1호 문언상 '가' 지역 기술 수출은 제20조②4호(판정서)도 제출 면제 범위에 포함됨. ${renumberNote}. 판정서 자체는 사내에서 반드시 작성·보관 (법 제28조).` });
+  }
+
+  // 제18조의3(수출자의 의무, 제2026-101호 신설): 허가 신청 전 거래관련자 신원·최종사용용도 확인,
+  // 허가 후 사실 변동 가능성 시 지체 없이 수출 중단·허가기관 협의, 재판매·재수출 동의 요청 시 협의
+  add('G-01-183', '거래관련자 신원·최종사용용도 확인 기록 (고시 제18조의3)', strategic || catchAllCandidate,
+    '전략물자·상황허가 대상이 아닙니다 (거래심사 기록은 그대로 보관).', '사전심사',
+    '허가 신청 "전"에 구매자·최종수하인·최종사용자 신원과 최종사용용도를 확인하고 거래심사표에 근거를 남김. 허가 후 사실이 달라질 가능성이 있으면 즉시 수출 중단 후 허가기관과 협의');
 
   // ── 사고·보고 ──
   add('J-01', FORM_LABELS.voluntaryReport, isRevoked, '사고 발생 시에만 활성화됩니다.', '사후/보고');

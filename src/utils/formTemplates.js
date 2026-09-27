@@ -1771,6 +1771,7 @@ ${commonStyle}
 <div class="byeolji-subtitle">별지 제3호 서식</div>
 <div class="doc-header">
   <h2>수출자 서약서</h2>
+  <p style="color:#c00;font-weight:bold;text-align:center;">※ 이 서식(구 별지 제3호)은 산업통상부고시 제2026-101호(2026. 9. 1. 시행)로 폐지되었습니다. 이전 작성분 조회용입니다.</p>
 </div>
 
 <table class="byeolji-table" style="margin-top: 20px;">

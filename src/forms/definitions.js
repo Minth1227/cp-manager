@@ -493,7 +493,7 @@ export const formDefinitions = {
             key: 'cpExemptionNotice',
             label: '🌟 [자율준수무역거래자 특례 안내]',
             type: 'info',
-            text: '<div style="color:var(--accent-teal); font-weight:bold; margin-bottom:4px;">[서류 제출 면제 대상]</div><div style="font-size:0.85rem; line-height:1.5;">수출 목적지가 "가 지역"이므로 고시 제21조에 따라 <strong>수출신용장(계약서), 수출자서약서, 최종사용자서약서(EUS) 등 증빙서류 제출이 전면 면제</strong>됩니다.</div>',
+            text: '<div style="color:var(--accent-teal); font-weight:bold; margin-bottom:4px;">[서류 제출 면제 대상]</div><div style="font-size:0.85rem; line-height:1.5;">수출 목적지가 "가 지역"이므로 물품 수출은 고시 제21조①에 따라 <strong>계약서, 최종사용자서약서(EUS), 최종사용자 영업증명서</strong>의 제출이 면제됩니다(현행 문언 기준). 최종수하인 진술서(제20조①3호)와 판정서는 면제 대상이 아니며, 기술 수출은 제21조⑧을 따릅니다. 수출자 서약서는 2026. 9. 1. 폐지되었습니다.</div>',
             dependsOn: { field: 'destinationRegion', value: ['가 지역'] }
           },
           { key: 'attachEUS', label: '최종사용자서약서 (EUS)', type: 'select', options: ['', '구비 완료', '해당 없음'], dependsOn: { field: 'destinationRegion', value: ['나의1 지역', '나의2 지역', '다 지역', '그 외 지역'] } },
@@ -790,7 +790,7 @@ export const formDefinitions = {
     title: '[별지 2] 최종수하인·구매자 서약서 (개별허가 첨부용)',
     category: '기타 구비서류',
     indicator: '전략물자수출입고시 별표 9 (별지 2)',
-    legalBasis: '전략물자수출입고시 제20조제1항제4호(별지 제2호 최종수하인 진술서): 개별수출허가(L-01) 신청 시 최종수하인 및 구매자가 물품의 최종 용도 및 재수출 제한을 서약하는 양식',
+    legalBasis: '전략물자수출입고시 제20조제1항제3호(별지 제2호 최종수하인 진술서, 제2026-101호 기준 호수): 개별수출허가(L-01) 신청 시 최종수하인 및 구매자가 물품의 최종 용도 및 재수출 제한을 서약하는 양식',
     timing: '개별수출허가(L-01) 신청 시 첨부',
     author: '최종수하인 및 구매자 (해외)',
     retention: '5년',
@@ -952,13 +952,13 @@ export const formDefinitions = {
   'L-10': {
 
     id: 'L-10',
-    title: '수출자 서약서 (별지 제3호)',
+    title: '[폐지] 수출자 서약서 (구 별지 제3호)',
     category: '수출 심사 및 출하',
     indicator: '3.2.4 (별표 20: 사내 수출허가심사 절차 이행)', // [수정] 3.1.2는 판정시점 지표로 서약서와 무관
     // [수정] 법적 근거 인용이 아예 없던 것을 원문 확인 후 채움 — 제20조(개별수출허가 신청서류) 제5호가
     // "별지 제3호 서식에 따른 수출자 서약서 1부"를 개별수출허가 신청 첨부서류로 명시함.
-    legalBasis: '전략물자수출입고시 제20조(개별수출허가 신청서류) 제5호, 별지 제3호',
-    timing: '개별수출허가 신청 시 (별지 제1호 첨부서류)',
+    legalBasis: '폐지 — 산업통상부고시 제2026-101호(2026. 9. 1. 시행)로 별지 제3호 삭제, 수출자 의무는 제18조의3으로 이관. 2026. 9. 1. 이전 작성분 보관 조회용',
+    timing: '작성 대상 아님 (폐지된 서식)',
     author: '수출자(대표이사) / 자율수출관리기구',
     retention: '5년',
     type: 'template',
